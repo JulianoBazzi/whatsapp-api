@@ -20,7 +20,7 @@ RUN set -x \
 COPY package*.json ./
 
 # Install the dependencies
-RUN npm ci --only=production --ignore-scripts
+RUN npm install --allow-root --unsafe-perm=true --only=production --ignore-scripts
 
 # Copy the rest of the source code to the working directory
 COPY . .

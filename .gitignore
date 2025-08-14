@@ -1,22 +1,54 @@
-# Ignore node_modules
-node_modules
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Ignore dotenv files
-.env
-# for cpanel or shared hosting purpose
-.htaccess
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# Ignore sessions
-sessions
-sessions_test
-.wwebjs_cache
+# testing
+/coverage
 
-# Ignore logs
-logs
+# next.js
+/.next/
+/out/
 
-# Ignore test coverage reports
-coverage
+# production
+/build
 
-# Ignore other unnecessary files
+# misc
 .DS_Store
-.vscode
+*.pem
+
+# debug
+pnpm-lock.yaml
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+
+# local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# vercel
+.vercel
+
+# next-pwa
+**/public/precache.*.*.js
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/fallback-*.js
+**/public/precache.*.*.js.map
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map
+**/public/fallback-*.js
+
+#merge
+.orig
+
+/.idea/

@@ -1,9 +1,10 @@
 const { Client, LocalAuth } = require('whatsapp-web.js')
 const fs = require('fs')
 const path = require('path')
+const { formatBytes, isValidUrl } = require('@julianobazzi/utils')
 const sessions = new Map()
 const { baseWebhookURL, sessionFolderPath, maxAttachmentSize, setMessagesAsSeen, webVersion, webVersionCacheType, recoverSessions } = require('./config')
-const { triggerWebhook, waitForNestedObject, checkIfEventisEnabled } = require('./utils')
+const { triggerWebhook, waitForNestedObject, isEventEnabled } = require('./utils')
 
 // Function to validate if the session is ready
 const validateSession = async (sessionId) => {
@@ -65,7 +66,11 @@ const restoreSessions = () => {
       fs.mkdirSync(sessionFolderPath) // Create the session directory if it doesn't exist
     }
     // Read the contents of the folder
-    fs.readdir(sessionFolderPath, (_, files) => {
+    fs.readdir(sessionFolderPath, (error, files) => {
+      if (error) {
+        console.error('Failed to read sessions folder:', error)
+        return
+      }
       // Iterate through the files in the parent folder
       for (const file of files) {
         // Use regular expression to extract the string from the folder name
@@ -142,7 +147,15 @@ const setupSession = (sessionId) => {
 
 const initializeEvents = (client, sessionId) => {
   // check if the session webhook is overridden
-  const sessionWebhook = process.env[sessionId.toUpperCase() + '_WEBHOOK_URL'] || baseWebhookURL
+  const customWebhook = process.env[sessionId.toUpperCase() + '_WEBHOOK_URL']
+  let sessionWebhook = baseWebhookURL
+  if (customWebhook) {
+    if (isValidUrl(customWebhook)) {
+      sessionWebhook = customWebhook
+    } else {
+      console.error(`Invalid ${sessionId.toUpperCase()}_WEBHOOK_URL (${customWebhook}), falling back to BASE_WEBHOOK_URL`)
+    }
+  }
 
   if (recoverSessions) {
     waitForNestedObject(client, 'pupPage').then(() => {
@@ -164,199 +177,179 @@ const initializeEvents = (client, sessionId) => {
     }).catch(e => { })
   }
 
-  checkIfEventisEnabled('auth_failure')
-    .then(_ => {
-      client.on('auth_failure', (msg) => {
-        triggerWebhook(sessionWebhook, sessionId, 'status', { msg })
-      })
+  if (isEventEnabled('auth_failure')) {
+    client.on('auth_failure', (msg) => {
+      triggerWebhook(sessionWebhook, sessionId, 'status', { msg })
     })
+  }
 
-  checkIfEventisEnabled('authenticated')
-    .then(_ => {
-      client.on('authenticated', () => {
-        triggerWebhook(sessionWebhook, sessionId, 'authenticated')
-      })
+  if (isEventEnabled('authenticated')) {
+    client.on('authenticated', () => {
+      triggerWebhook(sessionWebhook, sessionId, 'authenticated')
     })
+  }
 
-  checkIfEventisEnabled('call')
-    .then(_ => {
-      client.on('call', async (call) => {
-        triggerWebhook(sessionWebhook, sessionId, 'call', { call })
-      })
+  if (isEventEnabled('call')) {
+    client.on('call', async (call) => {
+      triggerWebhook(sessionWebhook, sessionId, 'call', { call })
     })
+  }
 
-  checkIfEventisEnabled('change_state')
-    .then(_ => {
-      client.on('change_state', state => {
-        triggerWebhook(sessionWebhook, sessionId, 'change_state', { state })
-      })
+  if (isEventEnabled('change_state')) {
+    client.on('change_state', state => {
+      triggerWebhook(sessionWebhook, sessionId, 'change_state', { state })
     })
+  }
 
-  checkIfEventisEnabled('disconnected')
-    .then(_ => {
-      client.on('disconnected', (reason) => {
-        triggerWebhook(sessionWebhook, sessionId, 'disconnected', { reason })
-      })
+  if (isEventEnabled('disconnected')) {
+    client.on('disconnected', (reason) => {
+      triggerWebhook(sessionWebhook, sessionId, 'disconnected', { reason })
     })
+  }
 
-  checkIfEventisEnabled('group_join')
-    .then(_ => {
-      client.on('group_join', (notification) => {
-        triggerWebhook(sessionWebhook, sessionId, 'group_join', { notification })
-      })
+  if (isEventEnabled('group_join')) {
+    client.on('group_join', (notification) => {
+      triggerWebhook(sessionWebhook, sessionId, 'group_join', { notification })
     })
+  }
 
-  checkIfEventisEnabled('group_leave')
-    .then(_ => {
-      client.on('group_leave', (notification) => {
-        triggerWebhook(sessionWebhook, sessionId, 'group_leave', { notification })
-      })
+  if (isEventEnabled('group_leave')) {
+    client.on('group_leave', (notification) => {
+      triggerWebhook(sessionWebhook, sessionId, 'group_leave', { notification })
     })
+  }
 
-  checkIfEventisEnabled('group_update')
-    .then(_ => {
-      client.on('group_update', (notification) => {
-        triggerWebhook(sessionWebhook, sessionId, 'group_update', { notification })
-      })
+  if (isEventEnabled('group_update')) {
+    client.on('group_update', (notification) => {
+      triggerWebhook(sessionWebhook, sessionId, 'group_update', { notification })
     })
+  }
 
-  checkIfEventisEnabled('loading_screen')
-    .then(_ => {
-      client.on('loading_screen', (percent, message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'loading_screen', { percent, message })
-      })
+  if (isEventEnabled('loading_screen')) {
+    client.on('loading_screen', (percent, message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'loading_screen', { percent, message })
     })
+  }
 
-  checkIfEventisEnabled('media_uploaded')
-    .then(_ => {
-      client.on('media_uploaded', (message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'media_uploaded', { message })
-      })
+  if (isEventEnabled('media_uploaded')) {
+    client.on('media_uploaded', (message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'media_uploaded', { message })
     })
+  }
 
-  checkIfEventisEnabled('message')
-    .then(_ => {
-      client.on('message', async (message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message', { message })
-        if (message.hasMedia && message._data?.size < maxAttachmentSize) {
+  if (isEventEnabled('message')) {
+    client.on('message', async (message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message', { message })
+      if (message.hasMedia) {
+        if (message._data?.size < maxAttachmentSize) {
           // custom service event
-          checkIfEventisEnabled('media').then(_ => {
+          if (isEventEnabled('media')) {
             message.downloadMedia().then(messageMedia => {
               triggerWebhook(sessionWebhook, sessionId, 'media', { messageMedia, message })
             }).catch(e => {
               console.log('Download media error:', e.message)
             })
-          })
+          }
+        } else {
+          console.log(`Skipping media download for ${sessionId}: attachment of ${formatBytes(message._data?.size)} exceeds the ${formatBytes(maxAttachmentSize)} limit`)
         }
-        if (setMessagesAsSeen) {
-          const chat = await message.getChat()
-          chat.sendSeen()
-        }
-      })
+      }
+      if (setMessagesAsSeen) {
+        const chat = await message.getChat()
+        chat.sendSeen()
+      }
     })
+  }
 
-  checkIfEventisEnabled('message_ack')
-    .then(_ => {
-      client.on('message_ack', async (message, ack) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_ack', { message, ack })
-        if (setMessagesAsSeen) {
-          const chat = await message.getChat()
-          chat.sendSeen()
-        }
-      })
+  if (isEventEnabled('message_ack')) {
+    client.on('message_ack', async (message, ack) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_ack', { message, ack })
+      if (setMessagesAsSeen) {
+        const chat = await message.getChat()
+        chat.sendSeen()
+      }
     })
+  }
 
-  checkIfEventisEnabled('message_create')
-    .then(_ => {
-      client.on('message_create', async (message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_create', { message })
-        if (setMessagesAsSeen) {
-          const chat = await message.getChat()
-          chat.sendSeen()
-        }
-      })
+  if (isEventEnabled('message_create')) {
+    client.on('message_create', async (message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_create', { message })
+      if (setMessagesAsSeen) {
+        const chat = await message.getChat()
+        chat.sendSeen()
+      }
     })
+  }
 
-  checkIfEventisEnabled('message_reaction')
-    .then(_ => {
-      client.on('message_reaction', (reaction) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_reaction', { reaction })
-      })
+  if (isEventEnabled('message_reaction')) {
+    client.on('message_reaction', (reaction) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_reaction', { reaction })
     })
+  }
 
-  checkIfEventisEnabled('message_edit')
-    .then(_ => {
-      client.on('message_edit', (message, newBody, prevBody) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_edit', { message, newBody, prevBody })
-      })
+  if (isEventEnabled('message_edit')) {
+    client.on('message_edit', (message, newBody, prevBody) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_edit', { message, newBody, prevBody })
     })
+  }
 
-  checkIfEventisEnabled('message_ciphertext')
-    .then(_ => {
-      client.on('message_ciphertext', (message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_ciphertext', { message })
-      })
+  if (isEventEnabled('message_ciphertext')) {
+    client.on('message_ciphertext', (message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_ciphertext', { message })
     })
+  }
 
-  checkIfEventisEnabled('message_revoke_everyone')
-    .then(_ => {
+  if (isEventEnabled('message_revoke_everyone')) {
+    // eslint-disable-next-line camelcase
+    client.on('message_revoke_everyone', async (message) => {
       // eslint-disable-next-line camelcase
-      client.on('message_revoke_everyone', async (message) => {
-        // eslint-disable-next-line camelcase
-        triggerWebhook(sessionWebhook, sessionId, 'message_revoke_everyone', { message })
-      })
+      triggerWebhook(sessionWebhook, sessionId, 'message_revoke_everyone', { message })
     })
+  }
 
-  checkIfEventisEnabled('message_revoke_me')
-    .then(_ => {
-      client.on('message_revoke_me', async (message) => {
-        triggerWebhook(sessionWebhook, sessionId, 'message_revoke_me', { message })
-      })
+  if (isEventEnabled('message_revoke_me')) {
+    client.on('message_revoke_me', async (message) => {
+      triggerWebhook(sessionWebhook, sessionId, 'message_revoke_me', { message })
     })
+  }
 
   client.on('qr', (qr) => {
     // inject qr code into session
     client.qr = qr
-    checkIfEventisEnabled('qr')
-      .then(_ => {
-        triggerWebhook(sessionWebhook, sessionId, 'qr', { qr })
-      })
+    if (isEventEnabled('qr')) {
+      triggerWebhook(sessionWebhook, sessionId, 'qr', { qr })
+    }
   })
 
-  checkIfEventisEnabled('ready')
-    .then(_ => {
-      client.on('ready', () => {
-        triggerWebhook(sessionWebhook, sessionId, 'ready')
-      })
+  if (isEventEnabled('ready')) {
+    client.on('ready', () => {
+      triggerWebhook(sessionWebhook, sessionId, 'ready')
     })
+  }
 
-  checkIfEventisEnabled('contact_changed')
-    .then(_ => {
-      client.on('contact_changed', async (message, oldId, newId, isContact) => {
-        triggerWebhook(sessionWebhook, sessionId, 'contact_changed', { message, oldId, newId, isContact })
-      })
+  if (isEventEnabled('contact_changed')) {
+    client.on('contact_changed', async (message, oldId, newId, isContact) => {
+      triggerWebhook(sessionWebhook, sessionId, 'contact_changed', { message, oldId, newId, isContact })
     })
+  }
 
-  checkIfEventisEnabled('chat_removed')
-    .then(_ => {
-      client.on('chat_removed', async (chat) => {
-        triggerWebhook(sessionWebhook, sessionId, 'chat_removed', { chat })
-      })
+  if (isEventEnabled('chat_removed')) {
+    client.on('chat_removed', async (chat) => {
+      triggerWebhook(sessionWebhook, sessionId, 'chat_removed', { chat })
     })
+  }
 
-  checkIfEventisEnabled('chat_archived')
-    .then(_ => {
-      client.on('chat_archived', async (chat, currState, prevState) => {
-        triggerWebhook(sessionWebhook, sessionId, 'chat_archived', { chat, currState, prevState })
-      })
+  if (isEventEnabled('chat_archived')) {
+    client.on('chat_archived', async (chat, currState, prevState) => {
+      triggerWebhook(sessionWebhook, sessionId, 'chat_archived', { chat, currState, prevState })
     })
+  }
 
-  checkIfEventisEnabled('unread_count')
-    .then(_ => {
-      client.on('unread_count', async (chat) => {
-        triggerWebhook(sessionWebhook, sessionId, 'unread_count', { chat })
-      })
+  if (isEventEnabled('unread_count')) {
+    client.on('unread_count', async (chat) => {
+      triggerWebhook(sessionWebhook, sessionId, 'unread_count', { chat })
     })
+  }
 }
 
 // Function to delete client session folder

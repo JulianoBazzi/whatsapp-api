@@ -71,7 +71,7 @@ const sessionValidation = async (req, res, next) => {
 
 const rateLimiter = rateLimiting({
   max: rateLimitMax,
-  windowMS: rateLimitWindowMs,
+  windowMs: rateLimitWindowMs,
   message: "You can't make any more requests at the moment. Try again later"
 })
 

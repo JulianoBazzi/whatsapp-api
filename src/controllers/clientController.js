@@ -1,6 +1,6 @@
 const { MessageMedia, Location, Buttons, List, Poll } = require('whatsapp-web.js')
 const { sessions } = require('../sessions')
-const { sendErrorResponse } = require('../utils')
+const { sendErrorResponse, phoneToChatId } = require('../utils')
 
 /**
  * Send a message to a chat using the WhatsApp API
@@ -67,8 +67,18 @@ const sendMessage = async (req, res) => {
   */
 
   try {
-    const { chatId, content, contentType, options } = req.body
+    const { content, contentType, options } = req.body
+    let { chatId } = req.body
     const client = sessions.get(req.params.sessionId)
+
+    // Accept a raw brazilian phone number as chatId and normalize it to 55<ddd><number>@c.us
+    if (chatId && !String(chatId).includes('@')) {
+      const normalizedChatId = phoneToChatId(chatId)
+      if (!normalizedChatId) {
+        return sendErrorResponse(res, 422, 'chatId invalid: not a valid phone number')
+      }
+      chatId = normalizedChatId
+    }
 
     let messageOut
     switch (contentType) {
@@ -180,7 +190,9 @@ const isRegisteredUser = async (req, res) => {
   try {
     const { number } = req.body
     const client = sessions.get(req.params.sessionId)
-    const result = await client.isRegisteredUser(number)
+    // Normalize brazilian phone numbers; other formats are passed through unchanged
+    const normalizedNumber = (number && !String(number).includes('@') && phoneToChatId(number)) || number
+    const result = await client.isRegisteredUser(normalizedNumber)
     res.json({ success: true, result })
   } catch (error) {
     sendErrorResponse(res, 500, error.message)
@@ -218,7 +230,9 @@ const getNumberId = async (req, res) => {
   try {
     const { number } = req.body
     const client = sessions.get(req.params.sessionId)
-    const result = await client.getNumberId(number)
+    // Normalize brazilian phone numbers; other formats are passed through unchanged
+    const normalizedNumber = (number && !String(number).includes('@') && phoneToChatId(number)) || number
+    const result = await client.getNumberId(normalizedNumber)
     res.json({ success: true, result })
   } catch (error) {
     sendErrorResponse(res, 500, error.message)

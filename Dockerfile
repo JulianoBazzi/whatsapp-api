@@ -8,19 +8,25 @@ WORKDIR /usr/src/app
 ENV CHROME_BIN="/usr/bin/chromium-browser" \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true" \
     NODE_ENV="production"
+
+# Install system dependencies (git is REQUIRED for github dependencies)
 RUN set -x \
     && apk update \
     && apk upgrade \
     && apk add --no-cache \
-    udev \
-    ttf-freefont \
-    chromium
+       git \
+       udev \
+       ttf-freefont \
+       chromium
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Enable pnpm via corepack (version pinned by the packageManager field)
+RUN corepack enable
+
+# Copy the manifest and lockfile to the working directory
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install the dependencies
-RUN npm install --allow-root --unsafe-perm=true --only=production --ignore-scripts
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy the rest of the source code to the working directory
 COPY . .
@@ -29,4 +35,4 @@ COPY . .
 EXPOSE 3000
 
 # Start the API
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

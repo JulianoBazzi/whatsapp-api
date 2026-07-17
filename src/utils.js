@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { isValidPhone, onlyNumbers } = require('@julianobazzi/utils')
 const { globalApiKey, disabledCallbacks } = require('./config')
 
 // Trigger webhook endpoint
@@ -34,13 +35,23 @@ const waitForNestedObject = (rootObj, nestedPath, maxWaitTime = 10000, interval 
   })
 }
 
-const checkIfEventisEnabled = (event) => {
-  return new Promise((resolve, reject) => { if (!disabledCallbacks.includes(event)) { resolve() } })
+// Check if a callback event is enabled (not listed in DISABLED_CALLBACKS)
+const isEventEnabled = (event) => !disabledCallbacks.includes(event)
+
+// Convert a Brazilian phone number into a WhatsApp chat id (55DDDNUMBER@c.us)
+const phoneToChatId = (phone) => {
+  const digits = onlyNumbers(String(phone ?? ''))
+  const localNumber = digits.startsWith('55') && digits.length > 11 ? digits.slice(2) : digits
+  if (!isValidPhone(localNumber)) {
+    return null
+  }
+  return `55${localNumber}@c.us`
 }
 
 module.exports = {
   triggerWebhook,
   sendErrorResponse,
   waitForNestedObject,
-  checkIfEventisEnabled
+  isEventEnabled,
+  phoneToChatId
 }

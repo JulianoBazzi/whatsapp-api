@@ -1,5 +1,5 @@
-const { sessions } = require('../sessions')
-const { sendErrorResponse } = require('../utils')
+const { sessions } = require('../sessions');
+const { sendErrorResponse } = require('../utils');
 
 /**
  * Retrieves information about a WhatsApp contact by ID.
@@ -15,17 +15,17 @@ const { sendErrorResponse } = require('../utils')
  */
 const getClassInfo = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found')
+      sendErrorResponse(res, 404, 'Contact not Found');
     }
-    res.json({ success: true, result: contact })
+    res.json({ success: true, result: contact });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Blocks a WhatsApp contact by ID.
@@ -41,18 +41,18 @@ const getClassInfo = async (req, res) => {
  */
 const block = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found')
+      sendErrorResponse(res, 404, 'Contact not Found');
     }
-    const result = await contact.block()
-    res.json({ success: true, result })
+    const result = await contact.block();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Retrieves the 'About' information of a WhatsApp contact by ID.
@@ -68,18 +68,18 @@ const block = async (req, res) => {
  */
 const getAbout = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found')
+      sendErrorResponse(res, 404, 'Contact not Found');
     }
-    const result = await contact.getAbout()
-    res.json({ success: true, result })
+    const result = await contact.getAbout();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Retrieves the chat information of a contact with a given contactId.
@@ -95,16 +95,18 @@ const getAbout = async (req, res) => {
  */
 const getChat = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
-    if (!contact) { sendErrorResponse(res, 404, 'Contact not Found') }
-    const result = await contact.getChat()
-    res.json({ success: true, result })
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
+    if (!contact) {
+      sendErrorResponse(res, 404, 'Contact not Found');
+    }
+    const result = await contact.getChat();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Retrieves the formatted number of a contact with a given contactId.
@@ -120,16 +122,18 @@ const getChat = async (req, res) => {
  */
 const getFormattedNumber = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
-    if (!contact) { sendErrorResponse(res, 404, 'Contact not Found') }
-    const result = await contact.getFormattedNumber()
-    res.json({ success: true, result })
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
+    if (!contact) {
+      sendErrorResponse(res, 404, 'Contact not Found');
+    }
+    const result = await contact.getFormattedNumber();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Retrieves the country code of a contact with a given contactId.
@@ -145,16 +149,18 @@ const getFormattedNumber = async (req, res) => {
  */
 const getCountryCode = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
-    if (!contact) { sendErrorResponse(res, 404, 'Contact not Found') }
-    const result = await contact.getCountryCode()
-    res.json({ success: true, result })
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
+    if (!contact) {
+      sendErrorResponse(res, 404, 'Contact not Found');
+    }
+    const result = await contact.getCountryCode();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Retrieves the profile picture url of a contact with a given contactId.
@@ -170,16 +176,18 @@ const getCountryCode = async (req, res) => {
  */
 const getProfilePicUrl = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
-    if (!contact) { sendErrorResponse(res, 404, 'Contact not Found') }
-    const result = await contact.getProfilePicUrl() || null
-    res.json({ success: true, result })
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
+    if (!contact) {
+      sendErrorResponse(res, 404, 'Contact not Found');
+    }
+    const result = (await contact.getProfilePicUrl()) || null;
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 /**
  * Unblocks the contact with a given contactId.
@@ -195,16 +203,18 @@ const getProfilePicUrl = async (req, res) => {
  */
 const unblock = async (req, res) => {
   try {
-    const { contactId } = req.body
-    const client = sessions.get(req.params.sessionId)
-    const contact = await client.getContactById(contactId)
-    if (!contact) { sendErrorResponse(res, 404, 'Contact not Found') }
-    const result = await contact.unblock()
-    res.json({ success: true, result })
+    const { contactId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const contact = await client.getContactById(contactId);
+    if (!contact) {
+      sendErrorResponse(res, 404, 'Contact not Found');
+    }
+    const result = await contact.unblock();
+    res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message)
+    sendErrorResponse(res, 500, error.message);
   }
-}
+};
 
 module.exports = {
   getClassInfo,
@@ -214,5 +224,5 @@ module.exports = {
   unblock,
   getFormattedNumber,
   getCountryCode,
-  getProfilePicUrl
-}
+  getProfilePicUrl,
+};

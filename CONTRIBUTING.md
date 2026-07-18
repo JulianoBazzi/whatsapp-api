@@ -6,7 +6,7 @@ Welcome to WhatsApp Web.js REST API Wrapper! We appreciate your interest in cont
 
 1. Fork the repository.
 2. Clone your forked repository to your local machine.
-3. Install the necessary dependencies by running `npm install`.
+3. Install the necessary dependencies by running `pnpm install`.
 4. Create a new branch for your contribution.
 
 ## Code Style

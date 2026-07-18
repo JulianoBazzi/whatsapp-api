@@ -7,6 +7,53 @@ This project is a work in progress: star it, create issues, features or pull req
 
 **NOTE**: I can't guarantee you will not be blocked by using this method, although it has worked for me. WhatsApp does not allow bots or unofficial clients on their platform, so this shouldn't be considered totally safe.
 
+## Prerequisites
+
+- [Node.js](https://nodejs.org) 24+
+- [pnpm](https://pnpm.io) — comes with Node.js via Corepack:
+
+```bash
+corepack enable
+```
+
+The pnpm version is pinned in `package.json` (`packageManager` field).
+
+## Local Development
+
+1. Clone the repository
+
+```bash
+git clone https://github.com/JulianoBazzi/whatsapp-api.git
+cd whatsapp-api
+```
+
+2. Install dependencies
+
+```bash
+pnpm install
+```
+
+3. Set up the environment (`BASE_WEBHOOK_URL` is required)
+
+```bash
+cp .env.example .env
+```
+
+4. Start the server (defaults to port 3000)
+
+```bash
+pnpm start
+```
+
+Other useful scripts:
+
+```bash
+pnpm test      # run the test suite (Vitest)
+pnpm lint      # lint with Biome
+pnpm format    # format with Biome
+pnpm swagger   # regenerate swagger.json after changing routes
+```
+
 ## Generate new build
 
 
@@ -20,7 +67,7 @@ cd whatsapp-api
 
 3. Install libs
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build new version

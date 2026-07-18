@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 process.env.API_KEY = 'test_api_key';
 process.env.BASE_WEBHOOK_URL = 'http://localhost:3987/localCallbackExample';
 
-const { phoneToChatId, isEventEnabled, sendErrorResponse, waitForNestedObject, triggerWebhook } = await import('../src/utils');
+const { phoneToChatId, isEventEnabled, sendErrorResponse, waitForNestedObject, triggerWebhook, toContactId } = await import('../src/utils');
 
 const projectRoot = process.cwd(); // vitest runs from the project root
 
@@ -74,6 +74,22 @@ describe('sendMessage chatId normalization (passthrough)', () => {
   it('should pass through already-qualified chat ids', () => {
     expect(normalizeChatId('5511999998888@c.us')).toBe('5511999998888@c.us');
     expect(normalizeChatId('6281288888888@c.us')).toBe('6281288888888@c.us');
+  });
+});
+
+describe('toContactId', () => {
+  it('should keep @c.us and @lid ids', () => {
+    expect(toContactId('5511999998888@c.us')).toBe('5511999998888@c.us');
+    expect(toContactId('141716858364058@lid')).toBe('141716858364058@lid');
+  });
+
+  it('should append @c.us to bare digits', () => {
+    expect(toContactId('5511999998888')).toBe('5511999998888@c.us');
+  });
+
+  it('should return null for empty values', () => {
+    expect(toContactId('')).toBeNull();
+    expect(toContactId(null)).toBeNull();
   });
 });
 

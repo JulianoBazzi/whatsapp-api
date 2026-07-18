@@ -49,10 +49,23 @@ const phoneToChatId = phone => {
   return `55${localNumber}@c.us`;
 };
 
+// Qualify a contact id: keep @c.us / @lid / other servers; append @c.us only for bare digits
+const toContactId = contactId => {
+  if (contactId == null || contactId === '') {
+    return null;
+  }
+  const value = String(contactId);
+  if (value.includes('@')) {
+    return value;
+  }
+  return `${value}@c.us`;
+};
+
 module.exports = {
   triggerWebhook,
   sendErrorResponse,
   waitForNestedObject,
   isEventEnabled,
   phoneToChatId,
+  toContactId,
 };

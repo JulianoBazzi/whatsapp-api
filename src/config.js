@@ -16,6 +16,27 @@ const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX, 10) || 1000;
 const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 1000;
 const recoverSessions = (process.env.RECOVER_SESSIONS || '').toLowerCase() === 'true';
 
+// Express "trust proxy": needed behind nginx/Docker so rate-limit sees the real client IP.
+// Examples: "1" (one hop), "true" (same as 1), "false"/unset (direct access).
+const parseTrustProxy = value => {
+  if (value == null || value === '') {
+    return false;
+  }
+  const normalized = String(value).toLowerCase();
+  if (normalized === 'true') {
+    return 1;
+  }
+  if (normalized === 'false') {
+    return false;
+  }
+  const hops = parseInt(value, 10);
+  if (!Number.isNaN(hops)) {
+    return hops;
+  }
+  return value;
+};
+const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+
 module.exports = {
   sessionFolderPath,
   enableLocalCallbackExample,
@@ -30,4 +51,5 @@ module.exports = {
   rateLimitMax,
   rateLimitWindowMs,
   recoverSessions,
+  trustProxy,
 };

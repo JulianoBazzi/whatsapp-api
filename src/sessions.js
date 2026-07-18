@@ -19,9 +19,11 @@ const validateSession = async sessionId => {
 
     const client = sessions.get(sessionId);
     // wait until the client is created
-    await waitForNestedObject(client, 'pupPage').catch(err => {
+    try {
+      await waitForNestedObject(client, 'pupPage');
+    } catch (err) {
       return { success: false, state: null, message: err.message };
-    });
+    }
 
     // Wait for client.pupPage to be evaluable
     let maxRetry = 0;
@@ -240,7 +242,8 @@ const initializeEvents = (client, sessionId) => {
     client.on('message', async message => {
       triggerWebhook(sessionWebhook, sessionId, 'message', { message });
       if (message.hasMedia) {
-        if (message._data?.size < maxAttachmentSize) {
+        const attachmentSize = message._data?.size;
+        if (typeof attachmentSize === 'number' && attachmentSize < maxAttachmentSize) {
           // custom service event
           if (isEventEnabled('media')) {
             message
@@ -252,13 +255,17 @@ const initializeEvents = (client, sessionId) => {
                 console.log('Download media error:', e.message);
               });
           }
-        } else {
-          console.log(`Skipping media download for ${sessionId}: attachment of ${formatBytes(message._data?.size)} exceeds the ${formatBytes(maxAttachmentSize)} limit`);
+        } else if (typeof attachmentSize === 'number') {
+          console.log(`Skipping media download for ${sessionId}: attachment of ${formatBytes(attachmentSize)} exceeds the ${formatBytes(maxAttachmentSize)} limit`);
         }
       }
       if (setMessagesAsSeen) {
-        const chat = await message.getChat();
-        chat.sendSeen();
+        try {
+          const chat = await message.getChat();
+          await chat.sendSeen();
+        } catch (e) {
+          console.log('sendSeen error:', e.message);
+        }
       }
     });
   }
@@ -267,8 +274,12 @@ const initializeEvents = (client, sessionId) => {
     client.on('message_ack', async (message, ack) => {
       triggerWebhook(sessionWebhook, sessionId, 'message_ack', { message, ack });
       if (setMessagesAsSeen) {
-        const chat = await message.getChat();
-        chat.sendSeen();
+        try {
+          const chat = await message.getChat();
+          await chat.sendSeen();
+        } catch (e) {
+          console.log('sendSeen error:', e.message);
+        }
       }
     });
   }
@@ -277,8 +288,12 @@ const initializeEvents = (client, sessionId) => {
     client.on('message_create', async message => {
       triggerWebhook(sessionWebhook, sessionId, 'message_create', { message });
       if (setMessagesAsSeen) {
-        const chat = await message.getChat();
-        chat.sendSeen();
+        try {
+          const chat = await message.getChat();
+          await chat.sendSeen();
+        } catch (e) {
+          console.log('sendSeen error:', e.message);
+        }
       }
     });
   }
@@ -382,14 +397,18 @@ const reloadSession = async sessionId => {
     if (!client) {
       return;
     }
-    client.pupPage.removeAllListeners('close');
-    client.pupPage.removeAllListeners('error');
+    if (client.pupPage) {
+      client.pupPage.removeAllListeners('close');
+      client.pupPage.removeAllListeners('error');
+    }
     try {
-      const pages = await client.pupBrowser.pages();
-      await Promise.all(pages.map(page => page.close()));
-      await Promise.race([client.pupBrowser.close(), new Promise(resolve => setTimeout(resolve, 5000))]);
+      if (client.pupBrowser) {
+        const pages = await client.pupBrowser.pages();
+        await Promise.all(pages.map(page => page.close()));
+        await Promise.race([client.pupBrowser.close(), new Promise(resolve => setTimeout(resolve, 5000))]);
+      }
     } catch (_e) {
-      const childProcess = client.pupBrowser.process();
+      const childProcess = client.pupBrowser?.process?.();
       if (childProcess) {
         childProcess.kill(9);
       }
@@ -408,8 +427,10 @@ const deleteSession = async (sessionId, validation) => {
     if (!client) {
       return;
     }
-    client.pupPage.removeAllListeners('close');
-    client.pupPage.removeAllListeners('error');
+    if (client.pupPage) {
+      client.pupPage.removeAllListeners('close');
+      client.pupPage.removeAllListeners('error');
+    }
     if (validation.success) {
       // Client Connected, request logout
       console.log(`Logging out session ${sessionId}`);
@@ -421,7 +442,7 @@ const deleteSession = async (sessionId, validation) => {
     }
     // Wait 10 secs for client.pupBrowser to be disconnected before deleting the folder
     let maxDelay = 0;
-    while (client.pupBrowser.isConnected() && maxDelay < 10) {
+    while (client.pupBrowser?.isConnected() && maxDelay < 10) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       maxDelay++;
     }

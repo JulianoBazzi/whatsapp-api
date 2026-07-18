@@ -53,6 +53,28 @@ describe('phoneToChatId', () => {
     expect(phoneToChatId(null)).toBeNull();
     expect(phoneToChatId(undefined)).toBeNull();
   });
+
+  it('should return null for non-brazilian international numbers', () => {
+    expect(phoneToChatId('6281288888888')).toBeNull();
+  });
+});
+
+describe('sendMessage chatId normalization (passthrough)', () => {
+  // Mirrors clientController sendMessage: BR normalizes, intl digits pass through
+  const normalizeChatId = chatId => (chatId && !String(chatId).includes('@') && phoneToChatId(chatId)) || chatId;
+
+  it('should normalize brazilian numbers without @', () => {
+    expect(normalizeChatId('11999998888')).toBe('5511999998888@c.us');
+  });
+
+  it('should pass through international numbers without @', () => {
+    expect(normalizeChatId('6281288888888')).toBe('6281288888888');
+  });
+
+  it('should pass through already-qualified chat ids', () => {
+    expect(normalizeChatId('5511999998888@c.us')).toBe('5511999998888@c.us');
+    expect(normalizeChatId('6281288888888@c.us')).toBe('6281288888888@c.us');
+  });
 });
 
 describe('isEventEnabled', () => {

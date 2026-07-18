@@ -71,13 +71,9 @@ const sendMessage = async (req, res) => {
     let { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
 
-    // Accept a raw brazilian phone number as chatId and normalize it to 55<ddd><number>@c.us
+    // Normalize brazilian phone numbers; other formats (intl digits, already-qualified ids) pass through
     if (chatId && !String(chatId).includes('@')) {
-      const normalizedChatId = phoneToChatId(chatId);
-      if (!normalizedChatId) {
-        return sendErrorResponse(res, 422, 'chatId invalid: not a valid phone number');
-      }
-      chatId = normalizedChatId;
+      chatId = phoneToChatId(chatId) || chatId;
     }
 
     let messageOut;

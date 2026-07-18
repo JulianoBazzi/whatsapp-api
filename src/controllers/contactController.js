@@ -19,7 +19,7 @@ const getClassInfo = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     res.json({ success: true, result: contact });
   } catch (error) {
@@ -45,7 +45,7 @@ const block = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.block();
     res.json({ success: true, result });
@@ -72,7 +72,7 @@ const getAbout = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.getAbout();
     res.json({ success: true, result });
@@ -99,7 +99,7 @@ const getChat = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.getChat();
     res.json({ success: true, result });
@@ -126,7 +126,7 @@ const getFormattedNumber = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.getFormattedNumber();
     res.json({ success: true, result });
@@ -153,7 +153,7 @@ const getCountryCode = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.getCountryCode();
     res.json({ success: true, result });
@@ -180,7 +180,7 @@ const getProfilePicUrl = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = (await contact.getProfilePicUrl()) || null;
     res.json({ success: true, result });
@@ -207,7 +207,7 @@ const unblock = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const contact = await client.getContactById(contactId);
     if (!contact) {
-      sendErrorResponse(res, 404, 'Contact not Found');
+      return sendErrorResponse(res, 404, 'Contact not Found');
     }
     const result = await contact.unblock();
     res.json({ success: true, result });

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { formatBytes, isValidUrl } = require('@julianobazzi/utils');
 const sessions = new Map();
-const { baseWebhookURL, sessionFolderPath, maxAttachmentSize, setMessagesAsSeen, webVersion, webVersionCacheType, recoverSessions } = require('./config');
+const { baseWebhookURL, sessionFolderPath, maxAttachmentSize, setMessagesAsSeen, webVersion, webVersionCacheType, recoverSessions, chromeBin, headless } = require('./config');
 const { triggerWebhook, waitForNestedObject, isEventEnabled } = require('./utils');
 
 // Function to validate if the session is ready
@@ -98,8 +98,8 @@ const setupSession = sessionId => {
 
     const clientOptions = {
       puppeteer: {
-        executablePath: process.env.CHROME_BIN || null,
-        // headless: false,
+        executablePath: chromeBin,
+        headless,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
       },
       userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',

@@ -77,14 +77,17 @@ const sendMessage = async (req, res) => {
       case 'string':
         if (options?.media) {
           const media = options.media;
-          media.filename = null;
-          media.filesize = null;
+          media.filename = media.filename || null;
+          media.filesize = media.filesize || null;
           options.media = new MessageMedia(media.mimetype, media.data, media.filename, media.filesize);
         }
         messageOut = await client.sendMessage(chatId, content, options);
         break;
       case 'MessageMediaFromURL': {
         const messageMediaFromURL = await MessageMedia.fromUrl(content, { unsafeMime: true });
+        if (options?.filename) {
+          messageMediaFromURL.filename = options.filename;
+        }
         messageOut = await client.sendMessage(chatId, messageMediaFromURL, options);
         break;
       }
@@ -244,9 +247,13 @@ const getNumberId = async (req, res) => {
  */
 const createGroup = async (req, res) => {
   try {
-    const { name, participants } = req.body;
+    const { name, title, participants, options } = req.body;
+    const groupTitle = name || title;
+    if (!groupTitle) {
+      return sendErrorResponse(res, 422, 'name or title is required');
+    }
     const client = sessions.get(req.params.sessionId);
-    const response = await client.createGroup(name, participants);
+    const response = await client.createGroup(groupTitle, participants, options);
     res.json({ success: true, response });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
@@ -329,6 +336,42 @@ const getChats = async (req, res) => {
     const client = sessions.get(req.params.sessionId);
     const chats = await client.getChats();
     res.json({ success: true, chats });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Returns active group chats for the session.
+ *
+ * @async
+ * @function getGroups
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {string} req.params.sessionId - The session ID.
+ * @returns {Promise<void>}
+ */
+const getGroups = async (req, res) => {
+  try {
+    const client = sessions.get(req.params.sessionId);
+    const chats = await client.getChats();
+    const groups = chats
+      .filter(chat => chat.isGroup)
+      .map(chat => {
+        const meta = chat.groupMetadata || {};
+        return {
+          id: chat.id?._serialized || meta.id?._serialized,
+          name: chat.name || meta.subject,
+          subject: meta.subject,
+          owner: meta.owner?._serialized,
+          createdAt: meta.createdAt,
+          description: meta.description,
+          participantCount: meta.participants?.length ?? chat.participants?.length,
+          announcementOnly: Boolean(chat.isAnnounceGroup),
+          restrictInfo: Boolean(chat.isRestricted),
+        };
+      });
+    res.json({ success: true, groups });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
   }
@@ -429,6 +472,52 @@ const getWWebVersion = async (req, res) => {
     const result = await client.getWWebVersion();
     res.json({ success: true, result });
   } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Screenshot of the WhatsApp Web page for the session.
+ *
+ * @async
+ * @function getScreenshotImage
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {string} req.params.sessionId - The session ID.
+ * @returns {Promise<void>}
+ */
+const getScreenshotImage = async (req, res) => {
+  // #swagger.summary = 'Get client screenshot image'
+  // #swagger.description = 'Screenshot of the WhatsApp Web page for the given session ID.'
+  try {
+    const session = sessions.get(req.params.sessionId);
+    if (!session) {
+      return res.json({ success: false, message: 'session_not_found' });
+    }
+    if (!session.pupPage) {
+      return res.json({ success: false, message: 'page_not_ready' });
+    }
+
+    const imgBase64Buffer = await session.pupPage.screenshot({
+      encoding: 'base64',
+      type: 'png',
+    });
+    const img = Buffer.from(imgBase64Buffer, 'base64');
+
+    /* #swagger.responses[200] = {
+        description: "Screenshot image.",
+        content: {
+          "image/png": {}
+        }
+      }
+    */
+    res.writeHead(200, {
+      'Content-Type': 'image/png',
+      'Content-Length': img.length,
+    });
+    return res.end(img);
+  } catch (error) {
+    console.log('getScreenshotImage ERROR', error);
     sendErrorResponse(res, 500, error.message);
   }
 };
@@ -1288,6 +1377,7 @@ module.exports = {
   getChatById,
   getChatLabels,
   getChats,
+  getGroups,
   getChatsByLabelId,
   getCommonGroups,
   getContactById,
@@ -1315,4 +1405,5 @@ module.exports = {
   unmuteChat,
   unpinChat,
   getWWebVersion,
+  getScreenshotImage,
 };

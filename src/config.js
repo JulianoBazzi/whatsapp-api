@@ -15,6 +15,8 @@ const webVersionCacheType = process.env.WEB_VERSION_CACHE_TYPE || 'none';
 const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX, 10) || 1000;
 const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 1000;
 const recoverSessions = (process.env.RECOVER_SESSIONS || '').toLowerCase() === 'true';
+const chromeBin = process.env.CHROME_BIN || null;
+const headless = process.env.HEADLESS ? process.env.HEADLESS.toLowerCase() === 'true' : true;
 
 // Express "trust proxy": needed behind nginx/Docker so rate-limit sees the real client IP.
 // Examples: "1" (one hop), "true" (same as 1), "false"/unset (direct access).
@@ -51,5 +53,7 @@ module.exports = {
   rateLimitMax,
   rateLimitWindowMs,
   recoverSessions,
+  chromeBin,
+  headless,
   trustProxy,
 };

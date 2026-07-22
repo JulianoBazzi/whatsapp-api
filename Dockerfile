@@ -17,7 +17,8 @@ RUN set -x \
        git \
        udev \
        ttf-freefont \
-       chromium
+       chromium \
+       ffmpeg
 
 # Enable pnpm via corepack (version pinned by the packageManager field)
 RUN corepack enable

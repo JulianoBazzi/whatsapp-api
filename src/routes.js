@@ -19,6 +19,8 @@ const contactController = require('./controllers/contactController');
  * ================
  */
 
+// Default landing page
+routes.get('/', healthController.index);
 // API endpoint to check if server is alive
 routes.get('/ping', healthController.ping);
 // API basic callback

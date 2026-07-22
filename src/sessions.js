@@ -18,11 +18,8 @@ const validateSession = async sessionId => {
     }
 
     const client = sessions.get(sessionId);
-    // wait until the client is created
-    try {
-      await waitForNestedObject(client, 'pupPage');
-    } catch (err) {
-      return { success: false, state: null, message: err.message };
+    if (!client.pupPage) {
+      return { success: false, state: null, message: 'session_not_ready' };
     }
 
     // Wait for client.pupPage to be evaluable

@@ -1,6 +1,10 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
 
 vi.mock('qrcode-terminal');
 
@@ -14,6 +18,7 @@ process.env.ENABLE_LOCAL_CALLBACK_EXAMPLE = 'TRUE';
 process.env.BASE_WEBHOOK_URL = `http://localhost:${TEST_PORT}/localCallbackExample`;
 
 const app = (await import('../src/app')).default;
+const { sessions } = require('../src/sessions');
 
 let server;
 beforeAll(() => {
@@ -33,6 +38,15 @@ afterAll(() => {
 
 // Define test cases
 describe('API health checks', () => {
+  it('should return the default HTML landing page', async () => {
+    const response = await request(app).get('/');
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toMatch(/html/);
+    expect(response.text).toContain(pkg.version);
+    expect(response.text).toContain('whatsapp-web.js');
+    expect(response.text).toContain(pkg.dependencies['whatsapp-web.js']);
+  });
+
   it('should return valid healthcheck', async () => {
     const response = await request(app).get('/ping');
     expect(response.status).toBe(200);
@@ -100,6 +114,18 @@ describe('API Session Validation Tests', () => {
     const response = await request(app).get('/session/status/unknownsession').set('x-api-key', 'test_api_key');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ success: false, state: null, message: 'session_not_found' });
+  });
+
+  it('should return session_not_ready immediately when pupPage is missing', async () => {
+    sessions.set('notready', {});
+    const startedAt = Date.now();
+    const response = await request(app).get('/session/status/notready').set('x-api-key', 'test_api_key');
+    const elapsedMs = Date.now() - startedAt;
+    sessions.delete('notready');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: false, state: null, message: 'session_not_ready' });
+    expect(elapsedMs).toBeLessThan(2000);
   });
 
   it('should return 404 when sending a message to an unknown session', async () => {

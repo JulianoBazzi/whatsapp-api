@@ -36,8 +36,24 @@ const doc = {
       description: 'All functions related to the client',
     },
     {
+      name: 'Chat',
+      description: 'Operations on individual chats',
+    },
+    {
+      name: 'Group Chat',
+      description: 'Operations on group chats',
+    },
+    {
       name: 'Message',
       description: 'May fail if the message is too old (Only from the last 100 Messages of the given chat)',
+    },
+    {
+      name: 'Contact',
+      description: 'Operations on contacts',
+    },
+    {
+      name: 'Various',
+      description: 'Health checks and miscellaneous endpoints',
     },
   ],
   definitions: {
@@ -49,6 +65,14 @@ const doc = {
       success: true,
       state: 'CONNECTED',
       message: 'session_connected',
+    },
+    QrCodeResponse: {
+      success: true,
+      qr: 'data',
+    },
+    QrCodeNotReadyResponse: {
+      success: false,
+      message: 'qr code not ready or already scanned',
     },
     RestartSessionResponse: {
       success: true,
@@ -62,13 +86,17 @@ const doc = {
       success: true,
       message: 'Flush completed successfully',
     },
+    PingResponse: {
+      success: true,
+      message: 'pong',
+    },
     ErrorResponse: {
       success: false,
       error: 'Some server error',
     },
     NotFoundResponse: {
       success: false,
-      error: 'Some server error',
+      error: 'session_not_connected',
     },
     ForbiddenResponse: {
       success: false,

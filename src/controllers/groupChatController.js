@@ -14,7 +14,21 @@ const { sendErrorResponse } = require('../utils');
  * @throws {Error} Throws an error if the chat is not a group chat.
  */
 const addParticipants = async (req, res) => {
+  // #swagger.summary = 'Add group participants'
+  // #swagger.description = 'Adds participants to a group chat.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          contactIds: { type: 'array', items: { type: 'string' }, description: 'Contact ids to add/remove/promote/demote', example: ['6281288888888@c.us'] }
+        }
+      }
+    }
+    */
     const { chatId, contactIds } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -39,7 +53,21 @@ const addParticipants = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const removeParticipants = async (req, res) => {
+  // #swagger.summary = 'Remove group participants'
+  // #swagger.description = 'Removes participants from a group chat.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          contactIds: { type: 'array', items: { type: 'string' }, description: 'Contact ids to add/remove/promote/demote', example: ['6281288888888@c.us'] }
+        }
+      }
+    }
+    */
     const { chatId, contactIds } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -64,7 +92,21 @@ const removeParticipants = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const promoteParticipants = async (req, res) => {
+  // #swagger.summary = 'Promote group participants'
+  // #swagger.description = 'Promotes participants to group admin.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          contactIds: { type: 'array', items: { type: 'string' }, description: 'Contact ids to add/remove/promote/demote', example: ['6281288888888@c.us'] }
+        }
+      }
+    }
+    */
     const { chatId, contactIds } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -89,7 +131,21 @@ const promoteParticipants = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const demoteParticipants = async (req, res) => {
+  // #swagger.summary = 'Demote group participants'
+  // #swagger.description = 'Demotes group admins to regular participants.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          contactIds: { type: 'array', items: { type: 'string' }, description: 'Contact ids to add/remove/promote/demote', example: ['6281288888888@c.us'] }
+        }
+      }
+    }
+    */
     const { chatId, contactIds } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -114,6 +170,8 @@ const demoteParticipants = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const getInviteCode = async (req, res) => {
+  // #swagger.summary = 'Get group invite code'
+  // #swagger.description = 'Retrieves the invite code for a group chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -139,7 +197,21 @@ const getInviteCode = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const setSubject = async (req, res) => {
+  // #swagger.summary = 'Set group subject'
+  // #swagger.description = 'Sets the subject/title of a group chat.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          subject: { type: 'string', description: 'New group subject/title', example: 'My Group' }
+        }
+      }
+    }
+    */
     const { chatId, subject } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -164,7 +236,21 @@ const setSubject = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const setDescription = async (req, res) => {
+  // #swagger.summary = 'Set group description'
+  // #swagger.description = 'Sets the description of a group chat.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          description: { type: 'string', description: 'New group description', example: 'Group about something' }
+        }
+      }
+    }
+    */
     const { chatId, description } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -189,6 +275,8 @@ const setDescription = async (req, res) => {
  * @throws {Error} If chat is not a group
  */
 const leave = async (req, res) => {
+  // #swagger.summary = 'Leave group'
+  // #swagger.description = 'Leaves a group chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -216,6 +304,8 @@ const leave = async (req, res) => {
  * @returns {Promise<void>} - A JSON response with success true and chat object containing chat information
  */
 const getClassInfo = async (req, res) => {
+  // #swagger.summary = 'Get group chat info'
+  // #swagger.description = 'Retrieves information about a group chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -242,6 +332,8 @@ const getClassInfo = async (req, res) => {
  * @returns {Promise<void>} - A JSON response with success true and the new invite code for the group chat
  */
 const revokeInvite = async (req, res) => {
+  // #swagger.summary = 'Revoke group invite'
+  // #swagger.description = 'Revokes the current invite link and returns a new code.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -271,7 +363,21 @@ const revokeInvite = async (req, res) => {
  * @throws {Error} If the chat is not a group.
  */
 const setInfoAdminsOnly = async (req, res) => {
+  // #swagger.summary = 'Set group info admins-only'
+  // #swagger.description = 'Restricts group info edits to admins.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          adminsOnly: { type: 'boolean', description: 'Whether only admins can edit group info', example: true }
+        }
+      }
+    }
+    */
     const { chatId, adminsOnly } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -300,7 +406,21 @@ const setInfoAdminsOnly = async (req, res) => {
  * @throws {Error} If the chat is not a group.
  */
 const setMessagesAdminsOnly = async (req, res) => {
+  // #swagger.summary = 'Set group messages admins-only'
+  // #swagger.description = 'Restricts sending messages to admins.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          adminsOnly: { type: 'boolean', description: 'Whether only admins can send messages', example: true }
+        }
+      }
+    }
+    */
     const { chatId, adminsOnly } = req.body;
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
@@ -326,7 +446,22 @@ const setMessagesAdminsOnly = async (req, res) => {
  * @throws {Error} If there is an issue setting the group picture, an error will be thrown.
  */
 const setPicture = async (req, res) => {
+  // #swagger.summary = 'Set group picture'
+  // #swagger.description = 'Sets the group profile picture from base64 media.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          pictureMimetype: { type: 'string', description: 'MIME type of the image', example: 'image/jpeg' },
+          pictureData: { type: 'string', description: 'Base64-encoded image data', example: '...' }
+        }
+      }
+    }
+    */
     const { pictureMimetype, pictureData, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
     const media = new MessageMedia(pictureMimetype, pictureData);
@@ -351,6 +486,8 @@ const setPicture = async (req, res) => {
  * @throws {Error} If there is an issue setting the group picture, an error will be thrown.
  */
 const deletePicture = async (req, res) => {
+  // #swagger.summary = 'Delete group picture'
+  // #swagger.description = 'Removes the group profile picture.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);

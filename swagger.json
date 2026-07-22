@@ -25,8 +25,24 @@
       "description": "All functions related to the client"
     },
     {
+      "name": "Chat",
+      "description": "Operations on individual chats"
+    },
+    {
+      "name": "Group Chat",
+      "description": "Operations on group chats"
+    },
+    {
       "name": "Message",
       "description": "May fail if the message is too old (Only from the last 100 Messages of the given chat)"
+    },
+    {
+      "name": "Contact",
+      "description": "Operations on contacts"
+    },
+    {
+      "name": "Various",
+      "description": "Health checks and miscellaneous endpoints"
     }
   ],
   "paths": {
@@ -35,10 +51,18 @@
         "tags": [
           "Various"
         ],
-        "description": "",
+        "summary": "Health check",
+        "description": "Returns pong when the server is alive.",
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Server is alive.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PingResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -48,7 +72,8 @@
         "tags": [
           "Various"
         ],
-        "description": "",
+        "summary": "Local callback example",
+        "description": "Example webhook receiver that logs payloads and prints QR codes to the terminal.",
         "parameters": [
           {
             "name": "x-api-key",
@@ -77,7 +102,60 @@
           {
             "apiKeyAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dataType": {
+                    "type": "string",
+                    "description": "Event type from the session webhook",
+                    "example": "qr"
+                  },
+                  "data": {
+                    "type": "object",
+                    "description": "Event payload",
+                    "example": {
+                      "qr": "..."
+                    }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Session that emitted the event",
+                    "example": "mysession"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dataType": {
+                    "type": "string",
+                    "description": "Event type from the session webhook",
+                    "example": "qr"
+                  },
+                  "data": {
+                    "type": "object",
+                    "description": "Event payload",
+                    "example": {
+                      "qr": "..."
+                    }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Session that emitted the event",
+                    "example": "mysession"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/session/start/{sessionId}": {
@@ -237,7 +315,14 @@
         ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "QR code string, or a message when unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeResponse"
+                }
+              }
+            }
           },
           "403": {
             "description": "Forbidden.",
@@ -298,9 +383,14 @@
         ],
         "responses": {
           "200": {
-            "description": "QR image.",
+            "description": "QR image (PNG), or JSON when the session/QR is unavailable.",
             "content": {
-              "image/png": {}
+              "image/png": {},
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QrCodeNotReadyResponse"
+                }
+              }
             }
           },
           "403": {
@@ -574,7 +664,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get client info",
+        "description": "Returns session/client information for the given session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -634,7 +725,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Accept invite",
+        "description": "Accepts a group invite by invite code.",
         "parameters": [
           {
             "name": "sessionId",
@@ -723,7 +815,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Archive chat",
+        "description": "Archives a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -812,7 +905,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Create group",
+        "description": "Creates a group with a title and participants.",
         "parameters": [
           {
             "name": "sessionId",
@@ -864,7 +958,74 @@
           {
             "apiKeyAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Group title (alias: title)",
+                    "example": "My Group"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Group title (alias: name)",
+                    "example": "My Group"
+                  },
+                  "participants": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Participant contact ids",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Optional createGroup options from whatsapp-web.js"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Group title (alias: title)",
+                    "example": "My Group"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Group title (alias: name)",
+                    "example": "My Group"
+                  },
+                  "participants": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Participant contact ids",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Optional createGroup options from whatsapp-web.js"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/client/getBlockedContacts/{sessionId}": {
@@ -872,7 +1033,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get blocked contacts",
+        "description": "Retrieves blocked contacts.",
         "parameters": [
           {
             "name": "sessionId",
@@ -932,7 +1094,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get chat by ID",
+        "description": "Retrieves a chat by its ID.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1021,7 +1184,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get chat labels",
+        "description": "Retrieves labels for a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1110,7 +1274,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get chats",
+        "description": "Retrieves all chats for the session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1170,7 +1335,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get groups",
+        "description": "Retrieves active group chats for the session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1230,7 +1396,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get chats by label",
+        "description": "Retrieves chats associated with a label ID.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1319,7 +1486,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get common groups",
+        "description": "Retrieves groups in common with a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1408,7 +1576,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get contact by ID",
+        "description": "Retrieves a contact by ID.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1497,7 +1666,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get contacts",
+        "description": "Retrieves all contacts for the session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1557,7 +1727,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get invite info",
+        "description": "Retrieves information about a group invite code.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1646,7 +1817,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get label by ID",
+        "description": "Retrieves a label by ID.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1735,7 +1907,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get labels",
+        "description": "Retrieves all labels for the session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1795,7 +1968,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Add or remove labels",
+        "description": "Adds or removes labels from chats.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1894,7 +2068,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get number ID",
+        "description": "Retrieves the WhatsApp ID for a phone number.",
         "parameters": [
           {
             "name": "sessionId",
@@ -1983,7 +2158,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Check registered user",
+        "description": "Checks whether a phone number is registered on WhatsApp.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2072,7 +2248,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get profile picture URL",
+        "description": "Retrieves the profile picture URL for a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2161,7 +2338,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get client state",
+        "description": "Retrieves the connection state of the client.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2211,7 +2389,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Mark chat unread",
+        "description": "Marks a chat as unread.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2300,7 +2479,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Mute chat",
+        "description": "Mutes a chat until unmuteDate, or indefinitely if omitted.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2367,7 +2547,7 @@
                   },
                   "unmuteDate": {
                     "type": "string",
-                    "description": "Date when the chat will be muted, leave as is to mute forever",
+                    "description": "Date/time when the chat should be unmuted; omit to mute indefinitely",
                     "example": ""
                   }
                 }
@@ -2384,7 +2564,7 @@
                   },
                   "unmuteDate": {
                     "type": "string",
-                    "description": "Date when the chat will be muted, leave as is to mute forever",
+                    "description": "Date/time when the chat should be unmuted; omit to mute indefinitely",
                     "example": ""
                   }
                 }
@@ -2399,7 +2579,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Pin chat",
+        "description": "Pins a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2488,7 +2669,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Search messages",
+        "description": "Searches messages with a query and optional options.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2587,7 +2769,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Send message",
+        "description": "Sends a message (string, media, location, contact, or poll) to a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2699,7 +2882,8 @@
                       "latitude": -6.2,
                       "longitude": 106.8,
                       "name": "Jakarta",
-                      "address": "Indonesia"
+                      "address": "Indonesia",
+                      "url": "https://example.com"
                     }
                   }
                 },
@@ -2739,7 +2923,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Send presence available",
+        "description": "Sets presence to available.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2799,7 +2984,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Send presence unavailable",
+        "description": "Sets presence to unavailable.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2859,7 +3045,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Send seen",
+        "description": "Marks a chat as seen.",
         "parameters": [
           {
             "name": "sessionId",
@@ -2948,7 +3135,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Set display name",
+        "description": "Sets the WhatsApp display name.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3037,7 +3225,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Set profile picture",
+        "description": "Sets the profile picture from base64 media.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3136,7 +3325,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Set status",
+        "description": "Sets the WhatsApp status message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3225,7 +3415,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Unarchive chat",
+        "description": "Unarchives a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3314,7 +3505,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Unmute chat",
+        "description": "Unmutes a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3403,7 +3595,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Unpin chat",
+        "description": "Unpins a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3492,7 +3685,8 @@
         "tags": [
           "Client"
         ],
-        "description": "",
+        "summary": "Get WhatsApp Web version",
+        "description": "Returns the WhatsApp Web version used by the client.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3606,7 +3800,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Get chat info",
+        "description": "Retrieves information about a chat by chatId.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3695,7 +3890,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Clear chat messages",
+        "description": "Clears all messages in a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3784,7 +3980,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Clear chat state",
+        "description": "Stops typing or recording state in a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3873,7 +4070,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Delete chat",
+        "description": "Deletes a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -3962,7 +4160,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Fetch chat messages",
+        "description": "Fetches messages from a chat with optional searchOptions.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4061,7 +4260,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Get chat contact",
+        "description": "Gets the contact associated with a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4150,7 +4350,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Send recording state",
+        "description": "Sends recording presence state to a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4239,7 +4440,8 @@
         "tags": [
           "Chat"
         ],
-        "description": "",
+        "summary": "Send typing state",
+        "description": "Sends typing presence state to a chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4328,7 +4530,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Get group chat info",
+        "description": "Retrieves information about a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4417,7 +4620,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Add group participants",
+        "description": "Adds participants to a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4479,8 +4683,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4491,8 +4705,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4506,7 +4730,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Demote group participants",
+        "description": "Demotes group admins to regular participants.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4568,8 +4793,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4580,8 +4815,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4595,7 +4840,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Get group invite code",
+        "description": "Retrieves the invite code for a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4684,7 +4930,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Leave group",
+        "description": "Leaves a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4773,7 +5020,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Promote group participants",
+        "description": "Promotes participants to group admin.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4835,8 +5083,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4847,8 +5105,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4862,7 +5130,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Remove group participants",
+        "description": "Removes participants from a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -4924,8 +5193,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4936,8 +5215,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "contactIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Contact ids to add/remove/promote/demote",
+                    "example": [
+                      "6281288888888@c.us"
+                    ]
                   }
                 }
               }
@@ -4951,7 +5240,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Revoke group invite",
+        "description": "Revokes the current invite link and returns a new code.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5040,7 +5330,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Set group description",
+        "description": "Sets the description of a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5102,8 +5393,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "New group description",
+                    "example": "Group about something"
                   }
                 }
               }
@@ -5114,8 +5410,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "New group description",
+                    "example": "Group about something"
                   }
                 }
               }
@@ -5129,7 +5430,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Set group info admins-only",
+        "description": "Restricts group info edits to admins.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5191,8 +5493,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "adminsOnly": {
+                    "type": "boolean",
+                    "description": "Whether only admins can edit group info",
+                    "example": true
                   }
                 }
               }
@@ -5203,8 +5510,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "adminsOnly": {
+                    "type": "boolean",
+                    "description": "Whether only admins can edit group info",
+                    "example": true
                   }
                 }
               }
@@ -5218,7 +5530,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Set group messages admins-only",
+        "description": "Restricts sending messages to admins.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5280,8 +5593,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "adminsOnly": {
+                    "type": "boolean",
+                    "description": "Whether only admins can send messages",
+                    "example": true
                   }
                 }
               }
@@ -5292,8 +5610,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "adminsOnly": {
+                    "type": "boolean",
+                    "description": "Whether only admins can send messages",
+                    "example": true
                   }
                 }
               }
@@ -5307,7 +5630,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Set group subject",
+        "description": "Sets the subject/title of a group chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5369,8 +5693,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "New group subject/title",
+                    "example": "My Group"
                   }
                 }
               }
@@ -5381,8 +5710,13 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "subject": {
+                    "type": "string",
+                    "description": "New group subject/title",
+                    "example": "My Group"
                   }
                 }
               }
@@ -5396,7 +5730,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Set group picture",
+        "description": "Sets the group profile picture from base64 media.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5458,8 +5793,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "pictureMimetype": {
+                    "type": "string",
+                    "description": "MIME type of the image",
+                    "example": "image/jpeg"
+                  },
+                  "pictureData": {
+                    "type": "string",
+                    "description": "Base64-encoded image data",
+                    "example": "..."
                   }
                 }
               }
@@ -5470,8 +5815,18 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
-                    "example": "6281288888888@c.us"
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "pictureMimetype": {
+                    "type": "string",
+                    "description": "MIME type of the image",
+                    "example": "image/jpeg"
+                  },
+                  "pictureData": {
+                    "type": "string",
+                    "description": "Base64-encoded image data",
+                    "example": "..."
                   }
                 }
               }
@@ -5485,7 +5840,8 @@
         "tags": [
           "Group Chat"
         ],
-        "description": "",
+        "summary": "Delete group picture",
+        "description": "Removes the group profile picture.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5574,7 +5930,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get message class info",
+        "description": "Gets information about a message by chatId and messageId.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5673,7 +6030,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Delete message",
+        "description": "Deletes a message. Optionally delete for everyone.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5742,6 +6100,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "everyone": {
+                    "type": "boolean",
+                    "description": "If true, delete/download for everyone when supported",
+                    "example": true
                   }
                 }
               }
@@ -5759,6 +6122,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "everyone": {
+                    "type": "boolean",
+                    "description": "If true, delete/download for everyone when supported",
+                    "example": true
                   }
                 }
               }
@@ -5772,7 +6140,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Download message media",
+        "description": "Downloads media from a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5841,6 +6210,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "everyone": {
+                    "type": "boolean",
+                    "description": "If true, delete/download for everyone when supported",
+                    "example": true
                   }
                 }
               }
@@ -5858,6 +6232,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "everyone": {
+                    "type": "boolean",
+                    "description": "If true, delete/download for everyone when supported",
+                    "example": true
                   }
                 }
               }
@@ -5871,7 +6250,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Forward message",
+        "description": "Forwards a message to another chat.",
         "parameters": [
           {
             "name": "sessionId",
@@ -5940,6 +6320,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "destinationChatId": {
+                    "type": "string",
+                    "description": "Chat id to forward the message to",
+                    "example": "6281288888889@c.us"
                   }
                 }
               }
@@ -5957,6 +6342,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "destinationChatId": {
+                    "type": "string",
+                    "description": "Chat id to forward the message to",
+                    "example": "6281288888889@c.us"
                   }
                 }
               }
@@ -5970,7 +6360,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get message info",
+        "description": "Gets delivery/read info for a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6069,7 +6460,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get message mentions",
+        "description": "Retrieves contacts mentioned in a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6168,7 +6560,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get message order",
+        "description": "Retrieves order information from a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6267,7 +6660,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get message payment",
+        "description": "Retrieves payment information from a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6366,7 +6760,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Get quoted message",
+        "description": "Retrieves the quoted/replied-to message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6465,7 +6860,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "React to message",
+        "description": "Adds a reaction emoji to a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6534,6 +6930,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "reaction": {
+                    "type": "string",
+                    "description": "Emoji reaction to apply (empty string clears)",
+                    "example": "👍"
                   }
                 }
               }
@@ -6551,6 +6952,11 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "reaction": {
+                    "type": "string",
+                    "description": "Emoji reaction to apply (empty string clears)",
+                    "example": "👍"
                   }
                 }
               }
@@ -6564,7 +6970,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Reply to message",
+        "description": "Replies to a message with string, media, location, contact, or poll content.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6626,30 +7033,37 @@
                 "properties": {
                   "chatId": {
                     "type": "string",
-                    "description": "The Chat id which contains the message",
-                    "example": "6281288888888@c.us"
+                    "description": "Chat that contains the message to reply to"
                   },
                   "messageId": {
                     "type": "string",
-                    "description": "Unique whatsApp identifier for the message",
-                    "example": "ABCDEF999999999"
+                    "description": "Message id to reply to"
+                  },
+                  "contentType": {
+                    "type": "string",
+                    "description": "string, MessageMedia, MessageMediaFromURL, Location, Contact, or Poll (defaults to string)"
+                  },
+                  "content": {
+                    "type": "object",
+                    "description": "Reply content (string or object depending on contentType)"
+                  },
+                  "destinationChatId": {
+                    "type": "string",
+                    "description": "Optional destination chat for the reply"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Additional send options"
                   }
                 }
-              }
-            },
-            "application/xml": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "chatId": {
-                    "type": "string",
-                    "description": "The Chat id which contains the message",
-                    "example": "6281288888888@c.us"
-                  },
-                  "messageId": {
-                    "type": "string",
-                    "description": "Unique whatsApp identifier for the message",
-                    "example": "ABCDEF999999999"
+              },
+              "examples": {
+                "string": {
+                  "value": {
+                    "chatId": "6281288888888@c.us",
+                    "messageId": "ABCDEF999999999",
+                    "contentType": "string",
+                    "content": "Hello!"
                   }
                 }
               }
@@ -6663,7 +7077,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Edit message",
+        "description": "Edits the content of a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6732,6 +7147,16 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "New message content",
+                    "example": "Updated text"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Optional edit options",
+                    "example": {}
                   }
                 }
               }
@@ -6749,6 +7174,16 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
+                  },
+                  "content": {
+                    "type": "string",
+                    "description": "New message content",
+                    "example": "Updated text"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Optional edit options",
+                    "example": {}
                   }
                 }
               }
@@ -6762,7 +7197,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Star message",
+        "description": "Stars a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6861,7 +7297,8 @@
         "tags": [
           "Message"
         ],
-        "description": "",
+        "summary": "Unstar message",
+        "description": "Removes the star from a message.",
         "parameters": [
           {
             "name": "sessionId",
@@ -6960,7 +7397,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get contact info",
+        "description": "Retrieves information about a contact by contactId.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7049,7 +7487,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Block contact",
+        "description": "Blocks a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7138,7 +7577,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get contact about",
+        "description": "Retrieves the contact's About text.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7227,7 +7667,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get contact chat",
+        "description": "Retrieves the chat associated with a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7316,7 +7757,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Unblock contact",
+        "description": "Unblocks a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7405,7 +7847,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get formatted number",
+        "description": "Retrieves the formatted phone number of a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7494,7 +7937,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get country code",
+        "description": "Retrieves the country code of a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7583,7 +8027,8 @@
         "tags": [
           "Contact"
         ],
-        "description": "",
+        "summary": "Get contact profile picture URL",
+        "description": "Retrieves the profile picture URL of a contact.",
         "parameters": [
           {
             "name": "sessionId",
@@ -7706,6 +8151,38 @@
           "name": "StatusSessionResponse"
         }
       },
+      "QrCodeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "qr": {
+            "type": "string",
+            "example": "data"
+          }
+        },
+        "xml": {
+          "name": "QrCodeResponse"
+        }
+      },
+      "QrCodeNotReadyResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "qr code not ready or already scanned"
+          }
+        },
+        "xml": {
+          "name": "QrCodeNotReadyResponse"
+        }
+      },
       "RestartSessionResponse": {
         "type": "object",
         "properties": {
@@ -7754,6 +8231,22 @@
           "name": "TerminateSessionsResponse"
         }
       },
+      "PingResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "pong"
+          }
+        },
+        "xml": {
+          "name": "PingResponse"
+        }
+      },
       "ErrorResponse": {
         "type": "object",
         "properties": {
@@ -7779,7 +8272,7 @@
           },
           "error": {
             "type": "string",
-            "example": "Some server error"
+            "example": "session_not_connected"
           }
         },
         "xml": {

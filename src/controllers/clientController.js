@@ -19,6 +19,8 @@ const { sendErrorResponse, phoneToChatId, toContactId } = require('../utils');
  * @throws {Error} - If there is an error while sending the message
  */
 const sendMessage = async (req, res) => {
+  // #swagger.summary = 'Send message'
+  // #swagger.description = 'Sends a message (string, media, location, contact, or poll) to a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -49,7 +51,7 @@ const sendMessage = async (req, res) => {
             string: { value: { chatId: '6281288888888@c.us', contentType: 'string', content: 'Hello World!' } },
             MessageMedia: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMedia', content: { mimetype: 'image/jpeg', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', filename: 'image.jpg' } } },
             MessageMediaFromURL: { value: { chatId: '6281288888888@c.us', contentType: 'MessageMediaFromURL', content: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example' } },
-            Location: { value: { chatId: '6281288888888@c.us', contentType: 'Location', content: { latitude: -6.2, longitude: 106.8, name: 'Jakarta', address: 'Indonesia' } } },
+            Location: { value: { chatId: '6281288888888@c.us', contentType: 'Location', content: { latitude: -6.2, longitude: 106.8, name: 'Jakarta', address: 'Indonesia', url: 'https://example.com' } } },
             Contact: {
               value: { chatId: '6281288888888@c.us', contentType: 'Contact', content: { contactId: '6281288888889@c.us' } }
             },
@@ -143,6 +145,8 @@ const sendMessage = async (req, res) => {
  * @throws Will throw an error if session info cannot be retrieved
  */
 const getClassInfo = async (req, res) => {
+  // #swagger.summary = 'Get client info'
+  // #swagger.description = 'Returns session/client information for the given session.'
   try {
     const client = sessions.get(req.params.sessionId);
     const sessionInfo = await client.info;
@@ -165,6 +169,8 @@ const getClassInfo = async (req, res) => {
  * @throws Will throw an error if user registration cannot be checked
  */
 const isRegisteredUser = async (req, res) => {
+  // #swagger.summary = 'Check registered user'
+  // #swagger.description = 'Checks whether a phone number is registered on WhatsApp.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -205,6 +211,8 @@ const isRegisteredUser = async (req, res) => {
  * @throws Will throw an error if user registration cannot be checked
  */
 const getNumberId = async (req, res) => {
+  // #swagger.summary = 'Get number ID'
+  // #swagger.description = 'Retrieves the WhatsApp ID for a phone number.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -246,6 +254,38 @@ const getNumberId = async (req, res) => {
  * @throws Will throw an error if group cannot be created
  */
 const createGroup = async (req, res) => {
+  // #swagger.summary = 'Create group'
+  // #swagger.description = 'Creates a group with a title and participants.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Group title (alias: title)',
+            example: 'My Group'
+          },
+          title: {
+            type: 'string',
+            description: 'Group title (alias: name)',
+            example: 'My Group'
+          },
+          participants: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Participant contact ids',
+            example: ['6281288888888@c.us']
+          },
+          options: {
+            type: 'object',
+            description: 'Optional createGroup options from whatsapp-web.js'
+          }
+        }
+      }
+    }
+  */
   try {
     const { name, title, participants, options } = req.body;
     const groupTitle = name || title;
@@ -273,6 +313,8 @@ const createGroup = async (req, res) => {
  * @throws Will throw an error if status cannot be set
  */
 const setStatus = async (req, res) => {
+  // #swagger.summary = 'Set status'
+  // #swagger.description = 'Sets the WhatsApp status message.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -308,6 +350,8 @@ const setStatus = async (req, res) => {
  * @returns {Promise<void>} - A Promise that resolves with the retrieved contacts or rejects with an error.
  */
 const getContacts = async (req, res) => {
+  // #swagger.summary = 'Get contacts'
+  // #swagger.description = 'Retrieves all contacts for the session.'
   try {
     const client = sessions.get(req.params.sessionId);
     const contacts = await client.getContacts();
@@ -332,6 +376,8 @@ const getContacts = async (req, res) => {
  * @throws {Error} If the operation fails, an error is thrown.
  */
 const getChats = async (req, res) => {
+  // #swagger.summary = 'Get chats'
+  // #swagger.description = 'Retrieves all chats for the session.'
   try {
     const client = sessions.get(req.params.sessionId);
     const chats = await client.getChats();
@@ -352,6 +398,8 @@ const getChats = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getGroups = async (req, res) => {
+  // #swagger.summary = 'Get groups'
+  // #swagger.description = 'Retrieves active group chats for the session.'
   try {
     const client = sessions.get(req.params.sessionId);
     const chats = await client.getChats();
@@ -390,6 +438,8 @@ const getGroups = async (req, res) => {
  * @throws {Error} - If there is an error retrieving the profile picture URL.
  */
 const getProfilePictureUrl = async (req, res) => {
+  // #swagger.summary = 'Get profile picture URL'
+  // #swagger.description = 'Retrieves the profile picture URL for a contact.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -429,6 +479,8 @@ const getProfilePictureUrl = async (req, res) => {
  * @throws {Error} If there is an error while accepting the invite.
  */
 const acceptInvite = async (req, res) => {
+  // #swagger.summary = 'Accept invite'
+  // #swagger.description = 'Accepts a group invite by invite code.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -467,6 +519,8 @@ const acceptInvite = async (req, res) => {
  * @throws {Error} If there is an error while accepting the invite.
  */
 const getWWebVersion = async (req, res) => {
+  // #swagger.summary = 'Get WhatsApp Web version'
+  // #swagger.description = 'Returns the WhatsApp Web version used by the client.'
   try {
     const client = sessions.get(req.params.sessionId);
     const result = await client.getWWebVersion();
@@ -536,6 +590,8 @@ const getScreenshotImage = async (req, res) => {
  * @throws {Error} If there is an error while archiving the chat.
  */
 const archiveChat = async (req, res) => {
+  // #swagger.summary = 'Archive chat'
+  // #swagger.description = 'Archives a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -573,6 +629,8 @@ const archiveChat = async (req, res) => {
  * @throws {Error} - Throws an error if the operation fails.
  */
 const getBlockedContacts = async (req, res) => {
+  // #swagger.summary = 'Get blocked contacts'
+  // #swagger.description = 'Retrieves blocked contacts.'
   try {
     const client = sessions.get(req.params.sessionId);
     const blockedContacts = await client.getBlockedContacts();
@@ -595,6 +653,8 @@ const getBlockedContacts = async (req, res) => {
  * @throws {Error} - Throws an error if the operation fails.
  */
 const getChatById = async (req, res) => {
+  // #swagger.summary = 'Get chat by ID'
+  // #swagger.description = 'Retrieves a chat by its ID.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -633,6 +693,8 @@ const getChatById = async (req, res) => {
  * @throws {Error} - Throws an error if the operation fails.
  */
 const getChatLabels = async (req, res) => {
+  // #swagger.summary = 'Get chat labels'
+  // #swagger.description = 'Retrieves labels for a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -671,6 +733,8 @@ const getChatLabels = async (req, res) => {
  * @throws {Error} - Throws an error if the operation fails.
  */
 const getChatsByLabelId = async (req, res) => {
+  // #swagger.summary = 'Get chats by label'
+  // #swagger.description = 'Retrieves chats associated with a label ID.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -708,6 +772,8 @@ const getChatsByLabelId = async (req, res) => {
  * @throws {Error} - If an error occurs while retrieving the common groups.
  */
 const getCommonGroups = async (req, res) => {
+  // #swagger.summary = 'Get common groups'
+  // #swagger.description = 'Retrieves groups in common with a contact.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -745,6 +811,8 @@ const getCommonGroups = async (req, res) => {
  * @throws {Error} - If an error occurs while retrieving the contact.
  */
 const getContactById = async (req, res) => {
+  // #swagger.summary = 'Get contact by ID'
+  // #swagger.description = 'Retrieves a contact by ID.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -782,6 +850,8 @@ const getContactById = async (req, res) => {
  * @throws {Error} - If an error occurs while retrieving the invite information.
  */
 const getInviteInfo = async (req, res) => {
+  // #swagger.summary = 'Get invite info'
+  // #swagger.description = 'Retrieves information about a group invite code.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -820,6 +890,8 @@ const getInviteInfo = async (req, res) => {
  * @throws {Error} If there is an error retrieving the label.
  */
 const getLabelById = async (req, res) => {
+  // #swagger.summary = 'Get label by ID'
+  // #swagger.description = 'Retrieves a label by ID.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -856,6 +928,8 @@ const getLabelById = async (req, res) => {
  * @throws {Error} If there is an error retrieving the labels.
  */
 const getLabels = async (req, res) => {
+  // #swagger.summary = 'Get labels'
+  // #swagger.description = 'Retrieves all labels for the session.'
   try {
     const client = sessions.get(req.params.sessionId);
     const labels = await client.getLabels();
@@ -875,6 +949,8 @@ const getLabels = async (req, res) => {
  * @throws {Error} if an error occurs
  */
 const addOrRemoveLabels = async (req, res) => {
+  // #swagger.summary = 'Add or remove labels'
+  // #swagger.description = 'Adds or removes labels from chats.'
   /*
   #swagger.requestBody = {
     required: true,
@@ -916,6 +992,8 @@ const addOrRemoveLabels = async (req, res) => {
  * @throws {Error} If there is an error retrieving the state.
  */
 const getState = async (req, res) => {
+  // #swagger.summary = 'Get client state'
+  // #swagger.description = 'Retrieves the connection state of the client.'
   try {
     const client = sessions.get(req.params.sessionId);
     const state = await client.getState();
@@ -938,6 +1016,8 @@ const getState = async (req, res) => {
  * @throws {Error} - If an error occurs while marking the chat as unread.
  */
 const markChatUnread = async (req, res) => {
+  // #swagger.summary = 'Mark chat unread'
+  // #swagger.description = 'Marks a chat as unread.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -977,6 +1057,8 @@ const markChatUnread = async (req, res) => {
  * @throws {Error} - If an error occurs while muting the chat.
  */
 const muteChat = async (req, res) => {
+  // #swagger.summary = 'Mute chat'
+  // #swagger.description = 'Mutes a chat until unmuteDate, or indefinitely if omitted.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -990,7 +1072,7 @@ const muteChat = async (req, res) => {
           },
           unmuteDate: {
             type: 'string',
-            description: 'Date when the chat will be muted, leave as is to mute forever',
+            description: 'Date/time when the chat should be unmuted; omit to mute indefinitely',
             example: ''
           },
         }
@@ -1025,6 +1107,8 @@ const muteChat = async (req, res) => {
  * @throws {Error} - If an error occurs while pinning the chat.
  */
 const pinChat = async (req, res) => {
+  // #swagger.summary = 'Pin chat'
+  // #swagger.description = 'Pins a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1063,6 +1147,8 @@ const pinChat = async (req, res) => {
  * @throws {Error} - If there's an error during the search.
  */
 const searchMessages = async (req, res) => {
+  // #swagger.summary = 'Search messages'
+  // #swagger.description = 'Searches messages with a query and optional options.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1109,6 +1195,8 @@ const searchMessages = async (req, res) => {
  * @throws {Error} - If there's an error during the presence sending.
  */
 const sendPresenceAvailable = async (req, res) => {
+  // #swagger.summary = 'Send presence available'
+  // #swagger.description = 'Sets presence to available.'
   try {
     const client = sessions.get(req.params.sessionId);
     const presence = await client.sendPresenceAvailable();
@@ -1129,6 +1217,8 @@ const sendPresenceAvailable = async (req, res) => {
  * @throws {Error} - If there's an error during the presence sending.
  */
 const sendPresenceUnavailable = async (req, res) => {
+  // #swagger.summary = 'Send presence unavailable'
+  // #swagger.description = 'Sets presence to unavailable.'
   try {
     const client = sessions.get(req.params.sessionId);
     const presence = await client.sendPresenceUnavailable();
@@ -1150,6 +1240,8 @@ const sendPresenceUnavailable = async (req, res) => {
  * @throws {Error} If there is an issue sending the seen status message, an error will be thrown.
  */
 const sendSeen = async (req, res) => {
+  // #swagger.summary = 'Send seen'
+  // #swagger.description = 'Marks a chat as seen.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1187,6 +1279,8 @@ const sendSeen = async (req, res) => {
  * @throws {Error} If there is an issue setting the display name, an error will be thrown.
  */
 const setDisplayName = async (req, res) => {
+  // #swagger.summary = 'Set display name'
+  // #swagger.description = 'Sets the WhatsApp display name.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1224,6 +1318,8 @@ const setDisplayName = async (req, res) => {
  * @throws {Error} If there is an issue unarchiving the chat, an error will be thrown.
  */
 const unarchiveChat = async (req, res) => {
+  // #swagger.summary = 'Unarchive chat'
+  // #swagger.description = 'Unarchives a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1262,6 +1358,8 @@ const unarchiveChat = async (req, res) => {
  * @throws {Error} - If an error occurs during the operation, it is thrown and handled by the catch block.
  */
 const unmuteChat = async (req, res) => {
+  // #swagger.summary = 'Unmute chat'
+  // #swagger.description = 'Unmutes a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1300,6 +1398,8 @@ const unmuteChat = async (req, res) => {
  * @throws {Error} - If an error occurs during the operation, it is thrown and handled by the catch block.
  */
 const unpinChat = async (req, res) => {
+  // #swagger.summary = 'Unpin chat'
+  // #swagger.description = 'Unpins a chat.'
   /*
     #swagger.requestBody = {
       required: true,
@@ -1336,6 +1436,8 @@ const unpinChat = async (req, res) => {
  */
 
 const setProfilePicture = async (req, res) => {
+  // #swagger.summary = 'Set profile picture'
+  // #swagger.description = 'Sets the profile picture from base64 media.'
   /*
     #swagger.requestBody = {
       required: true,

@@ -33,6 +33,8 @@ const _getMessageById = async (client, messageId, chatId) => {
  * @returns {Promise<void>} - A Promise that resolves with no value when the function completes.
  */
 const getClassInfo = async (req, res) => {
+  // #swagger.summary = 'Get message class info'
+  // #swagger.description = 'Gets information about a message by chatId and messageId.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -59,7 +61,22 @@ const getClassInfo = async (req, res) => {
  * @returns {Promise<void>} - A Promise that resolves with no value when the function completes.
  */
 const deleteMessage = async (req, res) => {
+  // #swagger.summary = 'Delete message'
+  // #swagger.description = 'Deletes a message. Optionally delete for everyone.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
+          everyone: { type: 'boolean', description: 'If true, delete/download for everyone when supported', example: true }
+        }
+      }
+    }
+    */
     const { messageId, chatId, everyone } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
@@ -86,7 +103,22 @@ const deleteMessage = async (req, res) => {
  * @returns {Promise<void>} - A Promise that resolves with no value when the function completes.
  */
 const downloadMedia = async (req, res) => {
+  // #swagger.summary = 'Download message media'
+  // #swagger.description = 'Downloads media from a message.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
+          everyone: { type: 'boolean', description: 'If true, delete/download for everyone when supported', example: true }
+        }
+      }
+    }
+    */
     const { messageId, chatId, everyone } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
@@ -115,7 +147,22 @@ const downloadMedia = async (req, res) => {
  * @throws Will throw an error if the message is not found or if there is an error during the forward operation.
  */
 const forward = async (req, res) => {
+  // #swagger.summary = 'Forward message'
+  // #swagger.description = 'Forwards a message to another chat.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
+          destinationChatId: { type: 'string', description: 'Chat id to forward the message to', example: '6281288888889@c.us' }
+        }
+      }
+    }
+    */
     const { messageId, chatId, destinationChatId } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
@@ -143,6 +190,8 @@ const forward = async (req, res) => {
  * @throws Will throw an error if the message is not found or if there is an error during the get info operation.
  */
 const getInfo = async (req, res) => {
+  // #swagger.summary = 'Get message info'
+  // #swagger.description = 'Gets delivery/read info for a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -172,6 +221,8 @@ const getInfo = async (req, res) => {
  * @throws {Error} - If there's an error retrieving the message or mentions
  */
 const getMentions = async (req, res) => {
+  // #swagger.summary = 'Get message mentions'
+  // #swagger.description = 'Retrieves contacts mentioned in a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -201,6 +252,8 @@ const getMentions = async (req, res) => {
  * @throws {Error} - If there's an error retrieving the message or order information
  */
 const getOrder = async (req, res) => {
+  // #swagger.summary = 'Get message order'
+  // #swagger.description = 'Retrieves order information from a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -230,6 +283,8 @@ const getOrder = async (req, res) => {
  * @throws {Object} If the specified message is not found or if an error occurs during the retrieval process.
  */
 const getPayment = async (req, res) => {
+  // #swagger.summary = 'Get message payment'
+  // #swagger.description = 'Retrieves payment information from a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -259,6 +314,8 @@ const getPayment = async (req, res) => {
  * @throws {Object} If the specified message is not found or if an error occurs during the retrieval process.
  */
 const getQuotedMessage = async (req, res) => {
+  // #swagger.summary = 'Get quoted message'
+  // #swagger.description = 'Retrieves the quoted/replied-to message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -288,7 +345,22 @@ const getQuotedMessage = async (req, res) => {
  * @throws {Error} If there was an error during the operation.
  */
 const react = async (req, res) => {
+  // #swagger.summary = 'React to message'
+  // #swagger.description = 'Adds a reaction emoji to a message.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
+          reaction: { type: 'string', description: 'Emoji reaction to apply (empty string clears)', example: '👍' }
+        }
+      }
+    }
+    */
     const { messageId, chatId, reaction } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
@@ -320,7 +392,32 @@ const react = async (req, res) => {
  * @throws {Error} If there was an error during the operation.
  */
 const reply = async (req, res) => {
+  // #swagger.summary = 'Reply to message'
+  // #swagger.description = 'Replies to a message with string, media, location, contact, or poll content.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      '@content': {
+        "application/json": {
+          schema: {
+            type: 'object',
+            properties: {
+              chatId: { type: 'string', description: 'Chat that contains the message to reply to' },
+              messageId: { type: 'string', description: 'Message id to reply to' },
+              contentType: { type: 'string', description: 'string, MessageMedia, MessageMediaFromURL, Location, Contact, or Poll (defaults to string)' },
+              content: { type: 'object', description: 'Reply content (string or object depending on contentType)' },
+              destinationChatId: { type: 'string', description: 'Optional destination chat for the reply' },
+              options: { type: 'object', description: 'Additional send options' }
+            }
+          },
+          examples: {
+            string: { value: { chatId: '6281288888888@c.us', messageId: 'ABCDEF999999999', contentType: 'string', content: 'Hello!' } }
+          }
+        }
+      }
+    }
+    */
     const { messageId, chatId, content, destinationChatId, options } = req.body;
     const contentType = req.body.contentType || 'string';
     const client = sessions.get(req.params.sessionId);
@@ -401,7 +498,23 @@ const reply = async (req, res) => {
  * @returns {Promise<void>}
  */
 const edit = async (req, res) => {
+  // #swagger.summary = 'Edit message'
+  // #swagger.description = 'Edits the content of a message.'
   try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
+          content: { type: 'string', description: 'New message content', example: 'Updated text' },
+          options: { type: 'object', description: 'Optional edit options', example: {} }
+        }
+      }
+    }
+    */
     const { messageId, chatId, content, options } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
@@ -428,6 +541,8 @@ const edit = async (req, res) => {
  * @throws {Error} If message is not found, it throws an error with the message "Message not Found".
  */
 const star = async (req, res) => {
+  // #swagger.summary = 'Star message'
+  // #swagger.description = 'Stars a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -455,6 +570,8 @@ const star = async (req, res) => {
  * @throws {Error} If message is not found, it throws an error with the message "Message not Found".
  */
 const unstar = async (req, res) => {
+  // #swagger.summary = 'Unstar message'
+  // #swagger.description = 'Removes the star from a message.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);

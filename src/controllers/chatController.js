@@ -14,6 +14,8 @@ const { sendErrorResponse } = require('../utils');
  * @throws {Error} - Throws an error if chat is not found or if there is a server error
  */
 const getClassInfo = async (req, res) => {
+  // #swagger.summary = 'Get chat info'
+  // #swagger.description = 'Retrieves information about a chat by chatId.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -40,6 +42,8 @@ const getClassInfo = async (req, res) => {
  * @returns {Object} The success status and the cleared messages.
  */
 const clearMessages = async (req, res) => {
+  // #swagger.summary = 'Clear chat messages'
+  // #swagger.description = 'Clears all messages in a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -67,6 +71,8 @@ const clearMessages = async (req, res) => {
  * @throws {Error} - If there was an error while clearing the state.
  */
 const clearState = async (req, res) => {
+  // #swagger.summary = 'Clear chat state'
+  // #swagger.description = 'Stops typing or recording state in a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -95,6 +101,8 @@ const clearState = async (req, res) => {
  * @throws {Object} If the chat is not found, an error response is sent with a status code of 404.
  */
 const deleteChat = async (req, res) => {
+  // #swagger.summary = 'Delete chat'
+  // #swagger.description = 'Deletes a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -127,6 +135,8 @@ const deleteChat = async (req, res) => {
  * @throws {Error} If the chat is not found or there is an error fetching messages.
  */
 const fetchMessages = async (req, res) => {
+  // #swagger.summary = 'Fetch chat messages'
+  // #swagger.description = 'Fetches messages from a chat with optional searchOptions.'
   try {
     /*
     #swagger.requestBody = {
@@ -173,6 +183,8 @@ const fetchMessages = async (req, res) => {
  * @throws {Error} - Throws an error if chat is not found or if there is an error getting the contact information
  */
 const getContact = async (req, res) => {
+  // #swagger.summary = 'Get chat contact'
+  // #swagger.description = 'Gets the contact associated with a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -200,6 +212,8 @@ const getContact = async (req, res) => {
  * @throws {object} - An error object containing a status code and error message if an error occurs.
  */
 const sendStateRecording = async (req, res) => {
+  // #swagger.summary = 'Send recording state'
+  // #swagger.description = 'Sends recording presence state to a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -227,6 +241,8 @@ const sendStateRecording = async (req, res) => {
  * @throws {object} - An error object containing a status code and error message if an error occurs.
  */
 const sendStateTyping = async (req, res) => {
+  // #swagger.summary = 'Send typing state'
+  // #swagger.description = 'Sends typing presence state to a chat.'
   try {
     const { chatId } = req.body;
     const client = sessions.get(req.params.sessionId);

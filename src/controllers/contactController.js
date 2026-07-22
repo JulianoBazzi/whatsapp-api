@@ -14,6 +14,8 @@ const { sendErrorResponse } = require('../utils');
  * @returns {Object} The contact information object.
  */
 const getClassInfo = async (req, res) => {
+  // #swagger.summary = 'Get contact info'
+  // #swagger.description = 'Retrieves information about a contact by contactId.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -40,6 +42,8 @@ const getClassInfo = async (req, res) => {
  * @returns {Object} The result of the blocking operation.
  */
 const block = async (req, res) => {
+  // #swagger.summary = 'Block contact'
+  // #swagger.description = 'Blocks a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -67,6 +71,8 @@ const block = async (req, res) => {
  * @returns {Object} The 'About' information of the contact.
  */
 const getAbout = async (req, res) => {
+  // #swagger.summary = 'Get contact about'
+  // #swagger.description = "Retrieves the contact's About text."
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -94,6 +100,8 @@ const getAbout = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with the chat information of the contact.
  */
 const getChat = async (req, res) => {
+  // #swagger.summary = 'Get contact chat'
+  // #swagger.description = 'Retrieves the chat associated with a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -121,6 +129,8 @@ const getChat = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with the formatted number of the contact.
  */
 const getFormattedNumber = async (req, res) => {
+  // #swagger.summary = 'Get formatted number'
+  // #swagger.description = 'Retrieves the formatted phone number of a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -148,6 +158,8 @@ const getFormattedNumber = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with the country code of the contact.
  */
 const getCountryCode = async (req, res) => {
+  // #swagger.summary = 'Get country code'
+  // #swagger.description = 'Retrieves the country code of a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -175,6 +187,8 @@ const getCountryCode = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with the profile picture url of the contact.
  */
 const getProfilePicUrl = async (req, res) => {
+  // #swagger.summary = 'Get contact profile picture URL'
+  // #swagger.description = 'Retrieves the profile picture URL of a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -202,6 +216,8 @@ const getProfilePicUrl = async (req, res) => {
  * @returns {Promise<void>} A promise that resolves with the result of unblocking the contact.
  */
 const unblock = async (req, res) => {
+  // #swagger.summary = 'Unblock contact'
+  // #swagger.description = 'Unblocks a contact.'
   try {
     const { contactId } = req.body;
     const client = sessions.get(req.params.sessionId);

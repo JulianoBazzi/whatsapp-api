@@ -80,8 +80,19 @@ const index = async (req, res) => {
 const ping = async (req, res) => {
   /*
     #swagger.tags = ['Various']
+    #swagger.summary = 'Health check'
+    #swagger.description = 'Returns pong when the server is alive.'
   */
   try {
+    /* #swagger.responses[200] = {
+      description: "Server is alive.",
+      content: {
+        "application/json": {
+          schema: { "$ref": "#/definitions/PingResponse" }
+        }
+      }
+    }
+    */
     res.json({ success: true, message: 'pong' });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
@@ -103,6 +114,31 @@ const ping = async (req, res) => {
 const localCallbackExample = async (req, res) => {
   /*
     #swagger.tags = ['Various']
+    #swagger.summary = 'Local callback example'
+    #swagger.description = 'Example webhook receiver that logs payloads and prints QR codes to the terminal.'
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          dataType: {
+            type: 'string',
+            description: 'Event type from the session webhook',
+            example: 'qr'
+          },
+          data: {
+            type: 'object',
+            description: 'Event payload',
+            example: { qr: '...' }
+          },
+          sessionId: {
+            type: 'string',
+            description: 'Session that emitted the event',
+            example: 'mysession'
+          }
+        }
+      }
+    }
   */
   try {
     const { dataType, data } = req.body;

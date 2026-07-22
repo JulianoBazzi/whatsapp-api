@@ -121,6 +121,15 @@ const sessionQrCode = async (req, res) => {
   try {
     const sessionId = req.params.sessionId;
     const session = sessions.get(sessionId);
+    /* #swagger.responses[200] = {
+      description: "QR code string, or a message when unavailable.",
+      content: {
+        "application/json": {
+          schema: { "$ref": "#/definitions/QrCodeResponse" }
+        }
+      }
+    }
+    */
     if (!session) {
       return res.json({ success: false, message: 'session_not_found' });
     }
@@ -163,15 +172,18 @@ const sessionQrCodeImage = async (req, res) => {
     if (!session) {
       return res.json({ success: false, message: 'session_not_found' });
     }
-    if (session.qr) {
-      const qrImage = qr.image(session.qr);
-      /* #swagger.responses[200] = {
-          description: "QR image.",
-          content: {
-            "image/png": {}
+    /* #swagger.responses[200] = {
+        description: "QR image (PNG), or JSON when the session/QR is unavailable.",
+        content: {
+          "image/png": {},
+          "application/json": {
+            schema: { "$ref": "#/definitions/QrCodeNotReadyResponse" }
           }
         }
-      */
+      }
+    */
+    if (session.qr) {
+      const qrImage = qr.image(session.qr);
       res.writeHead(200, {
         'Content-Type': 'image/png',
       });

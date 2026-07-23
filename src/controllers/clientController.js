@@ -1,6 +1,7 @@
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
 const { sendErrorResponse, phoneToChatId, toContactId } = require('../utils');
+const { logger } = require('../logger');
 
 /**
  * Send a message to a chat using the WhatsApp API
@@ -128,8 +129,7 @@ const sendMessage = async (req, res) => {
 
     res.json({ success: true, message: messageOut });
   } catch (error) {
-    console.log(error);
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -571,7 +571,7 @@ const getScreenshotImage = async (req, res) => {
     });
     return res.end(img);
   } catch (error) {
-    console.log('getScreenshotImage ERROR', error);
+    logger.error({ sessionId: req.params.sessionId, err: error }, 'getScreenshotImage failed');
     sendErrorResponse(res, 500, error.message);
   }
 };

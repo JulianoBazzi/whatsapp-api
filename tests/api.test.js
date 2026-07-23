@@ -138,6 +138,92 @@ describe('API Session Validation Tests', () => {
   });
 });
 
+describe('API Session Webhook Tests', () => {
+  it('should fall back to BASE_WEBHOOK_URL when no override is set', async () => {
+    const response = await request(app).get('/session/getWebhook/nooverride').set('x-api-key', 'test_api_key');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true, webhookUrl: process.env.BASE_WEBHOOK_URL, source: 'env_global' });
+  });
+
+  it('should reject an invalid webhook URL', async () => {
+    const response = await request(app).put('/session/setWebhook/badurl').set('x-api-key', 'test_api_key').send({ webhookUrl: 'not-a-url' });
+    expect(response.status).toBe(422);
+    expect(response.body).toEqual({ success: false, error: 'Invalid webhook URL: not-a-url' });
+  });
+
+  it('should set and clear a runtime webhook', async () => {
+    const target = 'https://example.com/hook';
+
+    const setResponse = await request(app).put('/session/setWebhook/runtimehook').set('x-api-key', 'test_api_key').send({ webhookUrl: target });
+    expect(setResponse.status).toBe(200);
+    expect(setResponse.body).toEqual({ success: true, message: 'Webhook updated', webhookUrl: target, source: 'runtime' });
+
+    const getResponse = await request(app).get('/session/getWebhook/runtimehook').set('x-api-key', 'test_api_key');
+    expect(getResponse.body).toEqual({ success: true, webhookUrl: target, source: 'runtime' });
+
+    const clearResponse = await request(app).put('/session/setWebhook/runtimehook').set('x-api-key', 'test_api_key').send({ webhookUrl: '' });
+    expect(clearResponse.status).toBe(200);
+    expect(clearResponse.body).toEqual({ success: true, message: 'Webhook cleared', webhookUrl: process.env.BASE_WEBHOOK_URL, source: 'env_global' });
+  });
+
+  it('should reject an invalid webhook URL on start without leaving a session behind', async () => {
+    const response = await request(app).post('/session/start/badstart').set('x-api-key', 'test_api_key').send({ webhookUrl: 'nope' });
+    expect(response.status).toBe(422);
+    expect(response.body).toEqual({ success: false, error: 'Invalid webhook URL: nope' });
+    expect(sessions.has('badstart')).toBe(false);
+  });
+});
+
+describe('API Session Management Tests', () => {
+  it('should list active sessions, persist a webhook and stop without deleting credentials', async () => {
+    const target = 'https://example.com/session-5';
+
+    const listBefore = await request(app).get('/session/getSessions').set('x-api-key', 'test_api_key');
+    expect(listBefore.status).toBe(200);
+    expect(listBefore.body.result).not.toContain('5');
+
+    const startResponse = await request(app).post('/session/start/5').set('x-api-key', 'test_api_key').send({ webhookUrl: target });
+    expect(startResponse.status).toBe(200);
+    expect(startResponse.body).toEqual({ success: true, message: 'Session initiated successfully' });
+
+    const listAfter = await request(app).get('/session/getSessions').set('x-api-key', 'test_api_key');
+    expect(listAfter.body.result).toContain('5');
+
+    // The override reached disk, so it survives a restart
+    const configPath = './sessions_test/session-5/webhook_config.json';
+    expect(fs.existsSync(configPath)).toBe(true);
+    expect(JSON.parse(fs.readFileSync(configPath, 'utf-8'))).toEqual({ webhookUrl: target });
+
+    const stopResponse = await request(app).get('/session/stop/5').set('x-api-key', 'test_api_key');
+    expect(stopResponse.status).toBe(200);
+    expect(stopResponse.body).toEqual({ success: true, message: 'Session stopped successfully' });
+
+    // Unlike terminate, stop keeps the credentials so the session can resume without a new QR code
+    expect(fs.existsSync('./sessions_test/session-5')).toBe(true);
+
+    const listAfterStop = await request(app).get('/session/getSessions').set('x-api-key', 'test_api_key');
+    expect(listAfterStop.body.result).not.toContain('5');
+  }, 30000);
+
+  it('should return session_not_found when stopping an unknown session', async () => {
+    const response = await request(app).get('/session/stop/unknownsession').set('x-api-key', 'test_api_key');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: false, message: 'session_not_found' });
+  });
+
+  it('should return session_not_found when requesting a pairing code for an unknown session', async () => {
+    const response = await request(app).post('/session/requestPairingCode/unknownsession').set('x-api-key', 'test_api_key').send({ phoneNumber: '5551999998888' });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: false, message: 'session_not_found' });
+  });
+
+  it('should require a phone number to request a pairing code', async () => {
+    const response = await request(app).post('/session/requestPairingCode/unknownsession').set('x-api-key', 'test_api_key').send({});
+    expect(response.status).toBe(422);
+    expect(response.body).toEqual({ success: false, error: 'phoneNumber is required' });
+  });
+});
+
 describe('API Action Tests', () => {
   it('should setup, create at least a QR, and terminate a client session', async () => {
     const response = await request(app).get('/session/start/4').set('x-api-key', 'test_api_key');

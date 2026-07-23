@@ -158,13 +158,49 @@
         }
       }
     },
+    "/session/getSessions": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get all sessions",
+        "description": "Lists the IDs of every session currently loaded in memory.",
+        "responses": {
+          "200": {
+            "description": "Retrieved all sessions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSessionsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
     "/session/start/{sessionId}": {
       "get": {
         "tags": [
           "Session"
         ],
         "summary": "Start new session",
-        "description": "Starts a session for the given session ID.",
+        "description": "Starts a session for the given session ID. On POST, accepts an optional webhookUrl in the body to override BASE_WEBHOOK_URL for this session.",
         "parameters": [
           {
             "name": "sessionId",
@@ -223,7 +259,131 @@
           {
             "apiKeyAuth": []
           }
-        ]
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "Optional webhook URL for this session. Overrides BASE_WEBHOOK_URL and <SESSIONID>_WEBHOOK_URL.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "Optional webhook URL for this session. Overrides BASE_WEBHOOK_URL and <SESSIONID>_WEBHOOK_URL.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Start new session",
+        "description": "Starts a session for the given session ID. On POST, accepts an optional webhookUrl in the body to override BASE_WEBHOOK_URL for this session.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status of the initiated session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server Failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "Optional webhook URL for this session. Overrides BASE_WEBHOOK_URL and <SESSIONID>_WEBHOOK_URL.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "Optional webhook URL for this session. Overrides BASE_WEBHOOK_URL and <SESSIONID>_WEBHOOK_URL.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/session/status/{sessionId}": {
@@ -431,6 +591,103 @@
         ]
       }
     },
+    "/session/requestPairingCode/{sessionId}": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Request authentication via pairing code",
+        "description": "Requests a pairing code for the session, as an alternative to scanning the QR code. The session must be started and waiting for authentication.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pairing code generated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCodeResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number in international, symbol-free format",
+                    "example": "5551999998888"
+                  },
+                  "showNotification": {
+                    "type": "boolean",
+                    "description": "Show the pairing notification on the phone",
+                    "example": true
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "description": "Phone number in international, symbol-free format",
+                    "example": "5551999998888"
+                  },
+                  "showNotification": {
+                    "type": "boolean",
+                    "description": "Show the pairing notification on the phone",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/session/restart/{sessionId}": {
       "get": {
         "tags": [
@@ -483,6 +740,64 @@
           },
           "500": {
             "description": "Server Failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/session/stop/{sessionId}": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Stop session",
+        "description": "Stops the session without deleting its credentials, so it can be started again without scanning a new QR code.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session stopped.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopSessionResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
             "content": {
               "application/json": {
                 "schema": {
@@ -643,6 +958,151 @@
           },
           "500": {
             "description": "Server Failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/session/setWebhook/{sessionId}": {
+      "put": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Set session webhook URL",
+        "description": "Sets the webhook URL of a session at runtime, taking precedence over <SESSIONID>_WEBHOOK_URL and BASE_WEBHOOK_URL. Send an empty webhookUrl to clear it and fall back to the environment. Persisted on disk for sessions that were already started.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook URL updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetWebhookResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "The webhook URL for this session. Send an empty string or null to clear it.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "description": "The webhook URL for this session. Send an empty string or null to clear it.",
+                    "example": "https://your-server.com/webhook/my-session"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/session/getWebhook/{sessionId}": {
+      "get": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Get session webhook URL",
+        "description": "Returns the webhook URL a session notifies and its source: runtime (set via API), env_session (<SESSIONID>_WEBHOOK_URL), env_global (BASE_WEBHOOK_URL) or none.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current webhook URL and source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetWebhookResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8229,6 +8689,104 @@
         },
         "xml": {
           "name": "TerminateSessionsResponse"
+        }
+      },
+      "StopSessionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Session stopped successfully"
+          }
+        },
+        "xml": {
+          "name": "StopSessionResponse"
+        }
+      },
+      "GetSessionsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "result": {
+            "type": "array",
+            "example": [
+              "session-1",
+              "session-2"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "xml": {
+          "name": "GetSessionsResponse"
+        }
+      },
+      "PairingCodeResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "result": {
+            "type": "string",
+            "example": "ABCD1234"
+          }
+        },
+        "xml": {
+          "name": "PairingCodeResponse"
+        }
+      },
+      "SetWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Webhook updated"
+          },
+          "webhookUrl": {
+            "type": "string",
+            "example": "https://your-server.com/webhook/my-session"
+          },
+          "source": {
+            "type": "string",
+            "example": "runtime"
+          }
+        },
+        "xml": {
+          "name": "SetWebhookResponse"
+        }
+      },
+      "GetWebhookResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "webhookUrl": {
+            "type": "string",
+            "example": "https://your-server.com/webhook/my-session"
+          },
+          "source": {
+            "type": "string",
+            "example": "runtime"
+          }
+        },
+        "xml": {
+          "name": "GetWebhookResponse"
         }
       },
       "PingResponse": {

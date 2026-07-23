@@ -86,6 +86,29 @@ const doc = {
       success: true,
       message: 'Flush completed successfully',
     },
+    StopSessionResponse: {
+      success: true,
+      message: 'Session stopped successfully',
+    },
+    GetSessionsResponse: {
+      success: true,
+      result: ['session-1', 'session-2'],
+    },
+    PairingCodeResponse: {
+      success: true,
+      result: 'ABCD1234',
+    },
+    SetWebhookResponse: {
+      success: true,
+      message: 'Webhook updated',
+      webhookUrl: 'https://your-server.com/webhook/my-session',
+      source: 'runtime',
+    },
+    GetWebhookResponse: {
+      success: true,
+      webhookUrl: 'https://your-server.com/webhook/my-session',
+      source: 'runtime',
+    },
     PingResponse: {
       success: true,
       message: 'pong',

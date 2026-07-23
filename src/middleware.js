@@ -1,7 +1,19 @@
+const crypto = require('node:crypto');
 const { globalApiKey, rateLimitMax, rateLimitWindowMs } = require('./config');
 const { sendErrorResponse } = require('./utils');
 const { validateSession } = require('./sessions');
 const rateLimiting = require('express-rate-limit');
+
+// Constant-time comparison, so response timing does not leak how much of the key was guessed right
+const matchesApiKey = candidate => {
+  if (typeof candidate !== 'string') {
+    return false;
+  }
+  const provided = Buffer.from(candidate);
+  const expected = Buffer.from(globalApiKey);
+  // timingSafeEqual throws on different lengths; comparing them first only leaks the key length
+  return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+};
 
 const apikey = async (req, res, next) => {
   /*
@@ -19,8 +31,7 @@ const apikey = async (req, res, next) => {
       }
   */
   if (globalApiKey) {
-    const apiKey = req.headers['x-api-key'];
-    if (!apiKey || apiKey !== globalApiKey) {
+    if (!matchesApiKey(req.headers['x-api-key'])) {
       return sendErrorResponse(res, 403, 'Invalid API key');
     }
   }

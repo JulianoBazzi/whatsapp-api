@@ -17,6 +17,14 @@ const rateLimitWindowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 1000
 const recoverSessions = (process.env.RECOVER_SESSIONS || '').toLowerCase() === 'true';
 const chromeBin = process.env.CHROME_BIN || null;
 const headless = process.env.HEADLESS ? process.env.HEADLESS.toLowerCase() === 'true' : true;
+const releaseBrowserLock = process.env.RELEASE_BROWSER_LOCK ? process.env.RELEASE_BROWSER_LOCK.toLowerCase() === 'true' : true;
+const autoStartSessions = process.env.AUTO_START_SESSIONS ? process.env.AUTO_START_SESSIONS.toLowerCase() === 'true' : true;
+const logLevel = process.env.LOG_LEVEL || 'info';
+
+// Webhook delivery: a receiver that never answers must not hold a socket forever.
+const webhookTimeoutMs = parseInt(process.env.WEBHOOK_TIMEOUT_MS, 10) || 10000;
+const webhookRetries = Number.isNaN(parseInt(process.env.WEBHOOK_RETRIES, 10)) ? 2 : parseInt(process.env.WEBHOOK_RETRIES, 10);
+const webhookRetryDelayMs = parseInt(process.env.WEBHOOK_RETRY_DELAY_MS, 10) || 1000;
 
 // Express "trust proxy": needed behind nginx/Docker so rate-limit sees the real client IP.
 // Examples: "1" (one hop), "true" (same as 1), "false"/unset (direct access).
@@ -55,5 +63,11 @@ module.exports = {
   recoverSessions,
   chromeBin,
   headless,
+  releaseBrowserLock,
+  autoStartSessions,
+  logLevel,
+  webhookTimeoutMs,
+  webhookRetries,
+  webhookRetryDelayMs,
   trustProxy,
 };

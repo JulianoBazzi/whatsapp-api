@@ -1,5 +1,5 @@
 const express = require('express');
-const { restoreSessions } = require('./sessions');
+const { ensureSessionFolder } = require('./sessions');
 const { routes } = require('./routes');
 const { maxAttachmentSize, trustProxy } = require('./config');
 
@@ -14,6 +14,8 @@ app.use(express.json({ limit: maxAttachmentSize + 1000000 }));
 app.use(express.urlencoded({ limit: maxAttachmentSize + 1000000, extended: true }));
 app.use('/', routes);
 
-restoreSessions();
+// Only the folder: restoring the sessions themselves is the server's job (see server.js),
+// so importing this module never launches browsers.
+ensureSessionFolder();
 
 module.exports = app;

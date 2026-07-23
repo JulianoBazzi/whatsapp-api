@@ -1,7 +1,5 @@
 const express = require('express');
 const routes = express.Router();
-const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('../swagger.json');
 const { enableLocalCallbackExample, enableSwaggerEndpoint } = require('./config');
 
 const middleware = require('./middleware');
@@ -39,14 +37,20 @@ sessionRouter.use(middleware.rateLimiter);
 sessionRouter.use(middleware.sessionSwagger);
 routes.use('/session', sessionRouter);
 
+sessionRouter.get('/getSessions', sessionController.getSessions);
 sessionRouter.get('/start/:sessionId', middleware.sessionNameValidation, sessionController.startSession);
+sessionRouter.post('/start/:sessionId', middleware.sessionNameValidation, sessionController.startSession);
 sessionRouter.get('/status/:sessionId', middleware.sessionNameValidation, sessionController.statusSession);
 sessionRouter.get('/qr/:sessionId', middleware.sessionNameValidation, sessionController.sessionQrCode);
 sessionRouter.get('/qr/:sessionId/image', middleware.sessionNameValidation, sessionController.sessionQrCodeImage);
+sessionRouter.post('/requestPairingCode/:sessionId', middleware.sessionNameValidation, sessionController.requestPairingCode);
 sessionRouter.get('/restart/:sessionId', middleware.sessionNameValidation, sessionController.restartSession);
+sessionRouter.get('/stop/:sessionId', middleware.sessionNameValidation, sessionController.stopSession);
 sessionRouter.get('/terminate/:sessionId', middleware.sessionNameValidation, sessionController.terminateSession);
 sessionRouter.get('/terminateInactive', sessionController.terminateInactiveSessions);
 sessionRouter.get('/terminateAll', sessionController.terminateAllSessions);
+sessionRouter.put('/setWebhook/:sessionId', middleware.sessionNameValidation, sessionController.setWebhook);
+sessionRouter.get('/getWebhook/:sessionId', middleware.sessionNameValidation, sessionController.getWebhook);
 
 /**
  * ================
@@ -195,6 +199,9 @@ contactRouter.post('/getProfilePicUrl/:sessionId', [middleware.sessionNameValida
  * ================
  */
 if (enableSwaggerEndpoint) {
+  // Required lazily: swagger.json is ~230 KB and parsing it on every boot is pure waste when disabled
+  const swaggerUi = require('swagger-ui-express');
+  const swaggerDocument = require('../swagger.json');
   routes.use('/api-docs', swaggerUi.serve);
   routes.get('/api-docs', swaggerUi.setup(swaggerDocument) /* #swagger.ignore = true */);
 }

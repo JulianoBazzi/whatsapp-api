@@ -12,9 +12,14 @@ services:
       - ENABLE_LOCAL_CALLBACK_EXAMPLE=TRUE # OPTIONAL, NOT RECOMMENDED FOR PRODUCTION
       - MAX_ATTACHMENT_SIZE=5000000 # IN BYTES
       - SET_MESSAGES_AS_SEEN=TRUE # WILL MARK THE MESSAGES AS READ AUTOMATICALLY
-      # ALL CALLBACKS: auth_failure|authenticated|call|change_state|disconnected|group_join|group_leave|group_update|loading_screen|media_uploaded|message|message_ack|message_create|message_reaction|message_revoke_everyone|qr|ready|contact_changed
+      # ALL CALLBACKS: auth_failure|authenticated|call|change_state|code|contact_changed|chat_archived|chat_removed|disconnected|group_admin_changed|group_join|group_leave|group_membership_request|group_update|loading_screen|media|media_uploaded|message|message_ack|message_ciphertext|message_create|message_edit|message_reaction|message_revoke_everyone|message_revoke_me|qr|ready|unread_count|vote_update
       - DISABLED_CALLBACKS=message_ack|message_reaction # PREVENT SENDING CERTAIN TYPES OF CALLBACKS BACK TO THE WEBHOOK
       - ENABLE_SWAGGER_ENDPOINT=FALSE # OPTIONAL, ENABLES THE /api-docs ENDPOINT
+      - LOG_LEVEL=info # OPTIONAL, PINO LOG LEVEL (trace|debug|info|warn|error|fatal)
+      # - WEBHOOK_TIMEOUT_MS=10000 # OPTIONAL, GIVE UP ON A WEBHOOK REQUEST AFTER THIS MANY MS
+      # - WEBHOOK_RETRIES=2 # OPTIONAL, EXTRA ATTEMPTS ON NETWORK ERRORS AND 5xx (0 DISABLES RETRIES)
+      # - RELEASE_BROWSER_LOCK=TRUE # OPTIONAL, REMOVE A STALE CHROMIUM SingletonLock AFTER AN UNCLEAN SHUTDOWN
+      # - AUTO_START_SESSIONS=TRUE # OPTIONAL, RESTORE SAVED SESSIONS ON BOOT
       # - RATE_LIMIT_MAX=1000 # OPTIONAL, THE MAXIUM NUMBER OF CONNECTIONS TO ALLOW PER TIME FRAME
       # - RATE_LIMIT_WINDOW_MS=1000 # OPTIONAL, TIME FRAME FOR WHICH REQUESTS ARE CHECKED IN MS
       - TRUST_PROXY=1 # REQUIRED WHEN NGINX (OR ANOTHER PROXY) SITS IN FRONT OF THE CONTAINER
@@ -22,4 +27,7 @@ services:
       # - WEB_VERSION_CACHE_TYPE=none # OPTIONAL, DETERMINES WHERE TO GET THE WHATSAPP WEB VERSION(local, remote or none), DEFAULT 'none'
       # - RECOVER_SESSIONS=TRUE # OPTIONAL, SHOULD WE RECOVER THE SESSION IN CASE OF PAGE FAILURES
     volumes:
-      - ./sessions:/usr/src/app/sessions # Mount the local ./sessions/ folder to the container's /usr/src/app/sessions folder
+      # Mount the local ./sessions/ folder to the container's /usr/src/app/sessions folder.
+      # ':Z' relabels the bind mount for SELinux (required for rootless Podman on Fedora/RHEL).
+      # It is a valid Docker option too, and a no-op on hosts without SELinux.
+      - ./sessions:/usr/src/app/sessions:Z

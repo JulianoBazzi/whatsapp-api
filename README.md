@@ -33,7 +33,8 @@ cd whatsapp-api
 pnpm install
 ```
 
-3. Set up the environment (`BASE_WEBHOOK_URL` is required)
+3. Set up the environment (`API_KEY` and `BASE_WEBHOOK_URL` are required — the server aborts on boot
+   without either, and every endpoint except `/ping` and `/` demands the key in the `x-api-key` header)
 
 ```bash
 cp .env.example .env

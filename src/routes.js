@@ -119,6 +119,10 @@ chatRouter.post('/clearState/:sessionId', [middleware.sessionNameValidation, mid
 chatRouter.post('/delete/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.deleteChat);
 chatRouter.post('/fetchMessages/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.fetchMessages);
 chatRouter.post('/getContact/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.getContact);
+chatRouter.post('/getLabels/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.getLabels);
+chatRouter.post('/changeLabels/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.changeLabels);
+chatRouter.post('/markUnread/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.markUnread);
+chatRouter.post('/sendSeen/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.sendSeen);
 chatRouter.post('/sendStateRecording/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.sendStateRecording);
 chatRouter.post('/sendStateTyping/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], chatController.sendStateTyping);
 
@@ -135,6 +139,17 @@ routes.use('/groupChat', groupChatRouter);
 
 groupChatRouter.post('/getClassInfo/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.getClassInfo);
 groupChatRouter.post('/addParticipants/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.addParticipants);
+groupChatRouter.post('/getGroupMembershipRequests/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.getGroupMembershipRequests);
+groupChatRouter.post(
+  '/approveGroupMembershipRequests/:sessionId',
+  [middleware.sessionNameValidation, middleware.sessionValidation],
+  groupChatController.approveGroupMembershipRequests,
+);
+groupChatRouter.post(
+  '/rejectGroupMembershipRequests/:sessionId',
+  [middleware.sessionNameValidation, middleware.sessionValidation],
+  groupChatController.rejectGroupMembershipRequests,
+);
 groupChatRouter.post('/demoteParticipants/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.demoteParticipants);
 groupChatRouter.post('/getInviteCode/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.getInviteCode);
 groupChatRouter.post('/leave/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], groupChatController.leave);
@@ -162,9 +177,14 @@ routes.use('/message', messageRouter);
 messageRouter.post('/getClassInfo/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getClassInfo);
 messageRouter.post('/delete/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.deleteMessage);
 messageRouter.post('/downloadMedia/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.downloadMedia);
+messageRouter.post('/downloadMediaAsData/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.downloadMediaAsData);
 messageRouter.post('/forward/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.forward);
+messageRouter.post('/getContact/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getContact);
 messageRouter.post('/getInfo/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getInfo);
 messageRouter.post('/getMentions/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getMentions);
+messageRouter.post('/getGroupMentions/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getGroupMentions);
+messageRouter.post('/getReactions/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getReactions);
+messageRouter.post('/getPollVotes/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getPollVotes);
 messageRouter.post('/getOrder/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getOrder);
 messageRouter.post('/getPayment/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getPayment);
 messageRouter.post('/getQuotedMessage/:sessionId', [middleware.sessionNameValidation, middleware.sessionValidation], messageController.getQuotedMessage);

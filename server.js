@@ -24,11 +24,13 @@ if (!isValidUrl(baseWebhookURL)) {
   process.exit(1);
 }
 
-if (globalApiKey) {
-  logger.info(`API key configured: ${maskSecret(globalApiKey)}`);
-} else {
-  logger.warn('API_KEY is not set - the API is running WITHOUT authentication');
+// Mandatory: this API drives a real WhatsApp account, so it must never be reachable unauthenticated
+if (!globalApiKey) {
+  logger.error('API_KEY environment variable is not available. Exiting...');
+  process.exit(1);
 }
+
+logger.info(`API key configured: ${maskSecret(globalApiKey)}`);
 
 const server = app.listen(port, () => {
   logger.info(`Server running on port ${port}`);

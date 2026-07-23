@@ -257,6 +257,138 @@ const sendStateTyping = async (req, res) => {
   }
 };
 
+/**
+ * @function
+ * @async
+ * @name markUnread
+ * @description Marks a chat as unread
+ * @param {object} req - Express request object
+ * @param {string} req.body.chatId - The ID of the chat
+ * @param {string} req.params.sessionId - The ID of the session
+ * @param {object} res - Express response object
+ * @returns {Promise<void>}
+ * @throws {Error} If the chat is not found or the operation fails
+ */
+const markUnread = async (req, res) => {
+  // #swagger.summary = 'Mark chat as unread'
+  // #swagger.description = 'Marks the chat as unread.'
+  try {
+    const { chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat) {
+      return sendErrorResponse(res, 404, 'Chat not Found');
+    }
+    await chat.markUnread();
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * @function
+ * @async
+ * @name sendSeen
+ * @description Marks the chat messages as seen
+ * @param {object} req - Express request object
+ * @param {string} req.body.chatId - The ID of the chat
+ * @param {string} req.params.sessionId - The ID of the session
+ * @param {object} res - Express response object
+ * @returns {Promise<void>}
+ * @throws {Error} If the chat is not found or the operation fails
+ */
+const sendSeen = async (req, res) => {
+  // #swagger.summary = 'Send seen status'
+  // #swagger.description = 'Marks the messages of a chat as seen (blue ticks).'
+  try {
+    const { chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat) {
+      return sendErrorResponse(res, 404, 'Chat not Found');
+    }
+    const result = await chat.sendSeen();
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * @function
+ * @async
+ * @name getLabels
+ * @description Gets the labels assigned to a chat
+ * @param {object} req - Express request object
+ * @param {string} req.body.chatId - The ID of the chat
+ * @param {string} req.params.sessionId - The ID of the session
+ * @param {object} res - Express response object
+ * @returns {Promise<void>}
+ * @throws {Error} If the chat is not found or the operation fails
+ */
+const getLabels = async (req, res) => {
+  // #swagger.summary = 'Get chat labels'
+  // #swagger.description = 'Gets the labels assigned to a chat (WhatsApp Business only).'
+  try {
+    const { chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat) {
+      return sendErrorResponse(res, 404, 'Chat not Found');
+    }
+    const labels = await chat.getLabels();
+    res.json({ success: true, labels });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * @function
+ * @async
+ * @name changeLabels
+ * @description Replaces the labels assigned to a chat
+ * @param {object} req - Express request object
+ * @param {string} req.body.chatId - The ID of the chat
+ * @param {Array<string|number>} req.body.labelIds - The label ids to assign; an empty array clears them
+ * @param {string} req.params.sessionId - The ID of the session
+ * @param {object} res - Express response object
+ * @returns {Promise<void>}
+ * @throws {Error} If the chat is not found or the operation fails
+ */
+const changeLabels = async (req, res) => {
+  // #swagger.summary = 'Change chat labels'
+  // #swagger.description = 'Replaces the labels assigned to a chat (WhatsApp Business only). Send an empty array to clear them.'
+  try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Unique whatsApp identifier for the given Chat', example: '6281288888888@c.us' },
+          labelIds: { type: 'array', description: 'Label ids to assign; an empty array clears them', example: ['0', '1'] }
+        }
+      }
+    }
+    */
+    const { chatId, labelIds } = req.body;
+    if (!Array.isArray(labelIds)) {
+      return sendErrorResponse(res, 422, 'labelIds must be an array');
+    }
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat) {
+      return sendErrorResponse(res, 404, 'Chat not Found');
+    }
+    await chat.changeLabels(labelIds);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
 module.exports = {
   getClassInfo,
   clearMessages,
@@ -264,6 +396,10 @@ module.exports = {
   deleteChat,
   fetchMessages,
   getContact,
+  getLabels,
+  changeLabels,
+  markUnread,
+  sendSeen,
   sendStateRecording,
   sendStateTyping,
 };

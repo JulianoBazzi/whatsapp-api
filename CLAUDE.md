@@ -37,7 +37,7 @@ pnpm swagger        # regenera swagger.json (swagger-autogen) — rodar após mu
 
 ## Avisos
 
-- Sem `API_KEY` definida a API roda **sem autenticação** (loga warning no boot).
+- `API_KEY` é **obrigatória**: `server.js` aborta no boot sem ela, e o middleware `apikey` falha fechado (403) se `globalApiKey` estiver vazia — importar `src/app.js` direto nunca serve API sem autenticação. Testes precisam definir `process.env.API_KEY` antes do import.
 - Build/publicação Docker é **manual** (ver README; imagem `julibazzi/whatsapp-api`); o CI (`pull_request.yml`) roda lint + testes em PRs para `master`.
 - A imagem é OCI: o mesmo `Dockerfile` e o mesmo `docker-compose.yml` servem Docker e Podman (rootless). O `:Z` no volume de `sessions` existe para hosts com SELinux (Podman rootless em Fedora/RHEL) e é no-op no Docker — **não remover**. O `.dockerignore` é lido pelo Podman como fallback do `.containerignore`, então não precisa duplicar.
 - WhatsApp pode bloquear números usando clientes não oficiais — projeto para uso próprio/consciente.

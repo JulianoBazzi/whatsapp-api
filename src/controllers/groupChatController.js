@@ -502,10 +502,134 @@ const deletePicture = async (req, res) => {
   }
 };
 
+/**
+ * Lists the pending membership requests of a group.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.chatId - ID of the group chat.
+ * @param {string} req.params.sessionId - The ID of the session for the user.
+ * @param {Object} res - The response object.
+ * @returns {Object} Returns a JSON object with a success status and the pending requests.
+ * @throws {Error} If the chat is not a group or the requests cannot be retrieved.
+ */
+const getGroupMembershipRequests = async (req, res) => {
+  // #swagger.summary = 'Get group membership requests'
+  // #swagger.description = 'Lists the pending requests to join a group. Pairs with the group_membership_request webhook event.'
+  try {
+    const { chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat.isGroup) {
+      throw new Error('The chat is not a group');
+    }
+    const result = await chat.getGroupMembershipRequests();
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Approves pending membership requests of a group.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.chatId - ID of the group chat.
+ * @param {Object} [req.body.options] - Options, e.g. { requesterIds: [], sleep: [250, 500] }. Omit requesterIds to approve all.
+ * @param {string} req.params.sessionId - The ID of the session for the user.
+ * @param {Object} res - The response object.
+ * @returns {Object} Returns a JSON object with a success status and the per-request result.
+ * @throws {Error} If the chat is not a group or the requests cannot be approved.
+ */
+const approveGroupMembershipRequests = async (req, res) => {
+  // #swagger.summary = 'Approve group membership requests'
+  // #swagger.description = 'Approves pending requests to join a group. Omit requesterIds to approve every pending request.'
+  try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          options: {
+            type: 'object',
+            description: 'Membership request options; omit requesterIds to act on every pending request',
+            example: { requesterIds: ['6281288888888@c.us'], sleep: [250, 500] }
+          }
+        }
+      }
+    }
+    */
+    const { chatId, options = {} } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat.isGroup) {
+      throw new Error('The chat is not a group');
+    }
+    const result = await chat.approveGroupMembershipRequests(options);
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Rejects pending membership requests of a group.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.chatId - ID of the group chat.
+ * @param {Object} [req.body.options] - Options, e.g. { requesterIds: [], sleep: [250, 500] }. Omit requesterIds to reject all.
+ * @param {string} req.params.sessionId - The ID of the session for the user.
+ * @param {Object} res - The response object.
+ * @returns {Object} Returns a JSON object with a success status and the per-request result.
+ * @throws {Error} If the chat is not a group or the requests cannot be rejected.
+ */
+const rejectGroupMembershipRequests = async (req, res) => {
+  // #swagger.summary = 'Reject group membership requests'
+  // #swagger.description = 'Rejects pending requests to join a group. Omit requesterIds to reject every pending request.'
+  try {
+    /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'Group chat id', example: '1203630...@g.us' },
+          options: {
+            type: 'object',
+            description: 'Membership request options; omit requesterIds to act on every pending request',
+            example: { requesterIds: ['6281288888888@c.us'], sleep: [250, 500] }
+          }
+        }
+      }
+    }
+    */
+    const { chatId, options = {} } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const chat = await client.getChatById(chatId);
+    if (!chat.isGroup) {
+      throw new Error('The chat is not a group');
+    }
+    const result = await chat.rejectGroupMembershipRequests(options);
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
 module.exports = {
   getClassInfo,
   addParticipants,
   demoteParticipants,
+  getGroupMembershipRequests,
+  approveGroupMembershipRequests,
+  rejectGroupMembershipRequests,
   getInviteCode,
   leave,
   promoteParticipants,

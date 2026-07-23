@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import request from 'supertest';
@@ -63,9 +64,38 @@ describe('API health checks', () => {
   });
 });
 
+describe('Boot requirements', () => {
+  // server.js is never imported by the suite (it would listen and restore sessions), so the abort
+  // behaviour is checked in a subprocess
+  const bootWith = env =>
+    spawnSync(process.execPath, ['server.js'], {
+      env: { ...process.env, SESSIONS_PATH: './sessions_test', ...env },
+      encoding: 'utf-8',
+      timeout: 20000,
+    });
+
+  it('should refuse to boot without an API_KEY', () => {
+    const result = bootWith({ API_KEY: '', BASE_WEBHOOK_URL: 'http://localhost:3987/localCallbackExample' });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('API_KEY environment variable is not available');
+  });
+
+  it('should refuse to boot without a BASE_WEBHOOK_URL', () => {
+    const result = bootWith({ API_KEY: 'test_api_key', BASE_WEBHOOK_URL: '' });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('BASE_WEBHOOK_URL environment variable is not available');
+  });
+});
+
 describe('API Authentication Tests', () => {
   it('should return 403 Forbidden for invalid API key', async () => {
     const response = await request(app).get('/session/start/1');
+    expect(response.status).toBe(403);
+    expect(response.body).toEqual({ success: false, error: 'Invalid API key' });
+  });
+
+  it('should return 403 when no API key is sent at all', async () => {
+    const response = await request(app).post('/chat/markUnread/1').send({ chatId: '5511999998888@c.us' });
     expect(response.status).toBe(403);
     expect(response.body).toEqual({ success: false, error: 'Invalid API key' });
   });
@@ -133,6 +163,27 @@ describe('API Session Validation Tests', () => {
       .post('/client/sendMessage/unknownsession')
       .set('x-api-key', 'test_api_key')
       .send({ chatId: '5511999998888@c.us', contentType: 'string', content: 'Hello' });
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ success: false, error: 'session_not_found' });
+  });
+
+  // The routes ported from wwebjs-api all sit behind sessionValidation, so an unknown session must
+  // be rejected before any of them touches the client
+  it.each([
+    ['/groupChat/getGroupMembershipRequests/unknownsession'],
+    ['/groupChat/approveGroupMembershipRequests/unknownsession'],
+    ['/groupChat/rejectGroupMembershipRequests/unknownsession'],
+    ['/chat/markUnread/unknownsession'],
+    ['/chat/sendSeen/unknownsession'],
+    ['/chat/getLabels/unknownsession'],
+    ['/chat/changeLabels/unknownsession'],
+    ['/message/downloadMediaAsData/unknownsession'],
+    ['/message/getContact/unknownsession'],
+    ['/message/getGroupMentions/unknownsession'],
+    ['/message/getReactions/unknownsession'],
+    ['/message/getPollVotes/unknownsession'],
+  ])('should return 404 on %s for an unknown session', async path => {
+    const response = await request(app).post(path).set('x-api-key', 'test_api_key').send({ chatId: '5511999998888@g.us', messageId: 'ABC' });
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ success: false, error: 'session_not_found' });
   });

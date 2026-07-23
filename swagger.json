@@ -4805,6 +4805,382 @@
         }
       }
     },
+    "/chat/getLabels/{sessionId}": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Get chat labels",
+        "description": "Gets the labels assigned to a chat (WhatsApp Business only).",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/changeLabels/{sessionId}": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Change chat labels",
+        "description": "Replaces the labels assigned to a chat (WhatsApp Business only). Send an empty array to clear them.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat",
+                    "example": "6281288888888@c.us"
+                  },
+                  "labelIds": {
+                    "type": "array",
+                    "description": "Label ids to assign; an empty array clears them",
+                    "example": [
+                      "0",
+                      "1"
+                    ]
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat",
+                    "example": "6281288888888@c.us"
+                  },
+                  "labelIds": {
+                    "type": "array",
+                    "description": "Label ids to assign; an empty array clears them",
+                    "example": [
+                      "0",
+                      "1"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/markUnread/{sessionId}": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Mark chat as unread",
+        "description": "Marks the chat as unread.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/sendSeen/{sessionId}": {
+      "post": {
+        "tags": [
+          "Chat"
+        ],
+        "summary": "Send seen status",
+        "description": "Marks the messages of a chat as seen (blue ticks).",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/chat/sendStateRecording/{sessionId}": {
       "post": {
         "tags": [
@@ -5177,6 +5553,328 @@
                     "example": [
                       "6281288888888@c.us"
                     ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groupChat/getGroupMembershipRequests/{sessionId}": {
+      "post": {
+        "tags": [
+          "Group Chat"
+        ],
+        "summary": "Get group membership requests",
+        "description": "Lists the pending requests to join a group. Pairs with the group_membership_request webhook event.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the given Chat (either group or personnal)",
+                    "example": "6281288888888@c.us"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groupChat/approveGroupMembershipRequests/{sessionId}": {
+      "post": {
+        "tags": [
+          "Group Chat"
+        ],
+        "summary": "Approve group membership requests",
+        "description": "Approves pending requests to join a group. Omit requesterIds to approve every pending request.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Membership request options; omit requesterIds to act on every pending request",
+                    "example": {
+                      "requesterIds": [
+                        "6281288888888@c.us"
+                      ],
+                      "sleep": [
+                        250,
+                        500
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Membership request options; omit requesterIds to act on every pending request",
+                    "example": {
+                      "requesterIds": [
+                        "6281288888888@c.us"
+                      ],
+                      "sleep": [
+                        250,
+                        500
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/groupChat/rejectGroupMembershipRequests/{sessionId}": {
+      "post": {
+        "tags": [
+          "Group Chat"
+        ],
+        "summary": "Reject group membership requests",
+        "description": "Rejects pending requests to join a group. Omit requesterIds to reject every pending request.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Membership request options; omit requesterIds to act on every pending request",
+                    "example": {
+                      "requesterIds": [
+                        "6281288888888@c.us"
+                      ],
+                      "sleep": [
+                        250,
+                        500
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "Group chat id",
+                    "example": "1203630...@g.us"
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Membership request options; omit requesterIds to act on every pending request",
+                    "example": {
+                      "requesterIds": [
+                        "6281288888888@c.us"
+                      ],
+                      "sleep": [
+                        250,
+                        500
+                      ]
+                    }
                   }
                 }
               }
@@ -6705,6 +7403,109 @@
         }
       }
     },
+    "/message/downloadMediaAsData/{sessionId}": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Download message media as binary",
+        "description": "Downloads media from a message as raw binary. Preferred over downloadMedia for large attachments, since base64 inside JSON inflates the payload by about a third.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw media binary.",
+            "content": {
+              "application/octet-stream": {}
+            }
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/message/forward/{sessionId}": {
       "post": {
         "tags": [
@@ -6807,6 +7608,106 @@
                     "type": "string",
                     "description": "Chat id to forward the message to",
                     "example": "6281288888889@c.us"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/getContact/{sessionId}": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Get message contact",
+        "description": "Retrieves the contact that sent the message.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
                   }
                 }
               }
@@ -6922,6 +7823,306 @@
         ],
         "summary": "Get message mentions",
         "description": "Retrieves contacts mentioned in a message.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/getGroupMentions/{sessionId}": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Get message group mentions",
+        "description": "Retrieves the groups mentioned in a message (as opposed to getMentions, which returns contacts).",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/getReactions/{sessionId}": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Get message reactions",
+        "description": "Retrieves the reactions of a message.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotFoundResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            },
+            "application/xml": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chatId": {
+                    "type": "string",
+                    "description": "The Chat id which contains the message",
+                    "example": "6281288888888@c.us"
+                  },
+                  "messageId": {
+                    "type": "string",
+                    "description": "Unique whatsApp identifier for the message",
+                    "example": "ABCDEF999999999"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/message/getPollVotes/{sessionId}": {
+      "post": {
+        "tags": [
+          "Message"
+        ],
+        "summary": "Get poll votes",
+        "description": "Retrieves the votes of a poll message.",
         "parameters": [
           {
             "name": "sessionId",

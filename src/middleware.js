@@ -6,7 +6,9 @@ const rateLimiting = require('express-rate-limit');
 
 // Constant-time comparison, so response timing does not leak how much of the key was guessed right
 const matchesApiKey = candidate => {
-  if (typeof candidate !== 'string') {
+  // server.js aborts without an API_KEY; failing closed here too keeps any other entry point
+  // (tests, a direct import of src/app) from serving an unauthenticated API by accident.
+  if (!globalApiKey || typeof candidate !== 'string') {
     return false;
   }
   const provided = Buffer.from(candidate);
@@ -30,10 +32,8 @@ const apikey = async (req, res, next) => {
         }
       }
   */
-  if (globalApiKey) {
-    if (!matchesApiKey(req.headers['x-api-key'])) {
-      return sendErrorResponse(res, 403, 'Invalid API key');
-    }
+  if (!matchesApiKey(req.headers['x-api-key'])) {
+    return sendErrorResponse(res, 403, 'Invalid API key');
   }
   next();
 };

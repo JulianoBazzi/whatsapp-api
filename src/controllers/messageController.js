@@ -586,10 +586,183 @@ const unstar = async (req, res) => {
   }
 };
 
+/**
+ * Downloads the media of a message as raw binary instead of base64 inside JSON.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.messageId - The ID of the message.
+ * @param {string} req.body.chatId - The ID of the chat containing the message.
+ * @param {string} req.params.sessionId - The ID of the session.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} If the message or its media is not found.
+ */
+const downloadMediaAsData = async (req, res) => {
+  // #swagger.summary = 'Download message media as binary'
+  // #swagger.description = 'Downloads media from a message as raw binary. Preferred over downloadMedia for large attachments, since base64 inside JSON inflates the payload by about a third.'
+  try {
+    const { messageId, chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const message = await _getMessageById(client, messageId, chatId);
+    if (!message) {
+      throw new Error('Message not Found');
+    }
+    if (!message.hasMedia) {
+      throw new Error('Message media not Found');
+    }
+    const { data, mimetype, filename } = await message.downloadMedia();
+    const media = Buffer.from(data, 'base64');
+    /* #swagger.responses[200] = {
+        description: "Raw media binary.",
+        content: {
+          "application/octet-stream": {}
+        }
+      }
+    */
+    // Content-Length comes from the decoded buffer, not from the media's `filesize`: the latter is
+    // the size WhatsApp reports for the original file and does not always match what we decoded.
+    res.writeHead(200, {
+      'Content-Type': mimetype || 'application/octet-stream',
+      'Content-Length': media.length,
+      ...(filename && { 'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"` }),
+    });
+    return res.end(media);
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Retrieves the contact that sent a message.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.messageId - The ID of the message.
+ * @param {string} req.body.chatId - The ID of the chat containing the message.
+ * @param {string} req.params.sessionId - The ID of the session.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} If the message is not found.
+ */
+const getContact = async (req, res) => {
+  // #swagger.summary = 'Get message contact'
+  // #swagger.description = 'Retrieves the contact that sent the message.'
+  try {
+    const { messageId, chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const message = await _getMessageById(client, messageId, chatId);
+    if (!message) {
+      throw new Error('Message not Found');
+    }
+    const contact = await message.getContact();
+    res.json({ success: true, contact });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Retrieves the groups mentioned in a message.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.messageId - The ID of the message.
+ * @param {string} req.body.chatId - The ID of the chat containing the message.
+ * @param {string} req.params.sessionId - The ID of the session.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} If the message is not found.
+ */
+const getGroupMentions = async (req, res) => {
+  // #swagger.summary = 'Get message group mentions'
+  // #swagger.description = 'Retrieves the groups mentioned in a message (as opposed to getMentions, which returns contacts).'
+  try {
+    const { messageId, chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const message = await _getMessageById(client, messageId, chatId);
+    if (!message) {
+      throw new Error('Message not Found');
+    }
+    const groups = await message.getGroupMentions();
+    res.json({ success: true, groups });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Retrieves the reactions of a message.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.messageId - The ID of the message.
+ * @param {string} req.body.chatId - The ID of the chat containing the message.
+ * @param {string} req.params.sessionId - The ID of the session.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} If the message is not found.
+ */
+const getReactions = async (req, res) => {
+  // #swagger.summary = 'Get message reactions'
+  // #swagger.description = 'Retrieves the reactions of a message.'
+  try {
+    const { messageId, chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const message = await _getMessageById(client, messageId, chatId);
+    if (!message) {
+      throw new Error('Message not Found');
+    }
+    const reactions = await message.getReactions();
+    res.json({ success: true, reactions });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Retrieves the votes of a poll message.
+ *
+ * @async
+ * @function
+ * @param {Object} req - The request object.
+ * @param {string} req.body.messageId - The ID of the poll message.
+ * @param {string} req.body.chatId - The ID of the chat containing the message.
+ * @param {string} req.params.sessionId - The ID of the session.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ * @throws {Error} If the message is not found.
+ */
+const getPollVotes = async (req, res) => {
+  // #swagger.summary = 'Get poll votes'
+  // #swagger.description = 'Retrieves the votes of a poll message.'
+  try {
+    const { messageId, chatId } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    const message = await _getMessageById(client, messageId, chatId);
+    if (!message) {
+      throw new Error('Message not Found');
+    }
+    const votes = await message.getPollVotes();
+    res.json({ success: true, votes });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
 module.exports = {
   getClassInfo,
   deleteMessage,
   downloadMedia,
+  downloadMediaAsData,
+  getContact,
+  getGroupMentions,
+  getReactions,
+  getPollVotes,
   forward,
   getInfo,
   getMentions,

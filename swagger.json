@@ -7261,7 +7261,7 @@
                   },
                   "everyone": {
                     "type": "boolean",
-                    "description": "If true, delete/download for everyone when supported",
+                    "description": "If true, delete for everyone when supported",
                     "example": true
                   }
                 }
@@ -7283,7 +7283,7 @@
                   },
                   "everyone": {
                     "type": "boolean",
-                    "description": "If true, delete/download for everyone when supported",
+                    "description": "If true, delete for everyone when supported",
                     "example": true
                   }
                 }
@@ -7368,11 +7368,6 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
-                  },
-                  "everyone": {
-                    "type": "boolean",
-                    "description": "If true, delete/download for everyone when supported",
-                    "example": true
                   }
                 }
               }
@@ -7390,11 +7385,6 @@
                     "type": "string",
                     "description": "Unique whatsApp identifier for the message",
                     "example": "ABCDEF999999999"
-                  },
-                  "everyone": {
-                    "type": "boolean",
-                    "description": "If true, delete/download for everyone when supported",
-                    "example": true
                   }
                 }
               }

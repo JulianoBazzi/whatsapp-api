@@ -16,6 +16,7 @@ const {
   releaseBrowserLock,
 } = require('./config');
 const { triggerWebhook, waitForNestedObject, isEventEnabled, sendMessageSeenStatus, sleep } = require('./utils');
+const { applyPagePatches } = require('./patches');
 const { logger } = require('./logger');
 
 // Webhook overrides set at runtime (API) or restored from disk, keyed by session id
@@ -326,27 +327,35 @@ const initializeEvents = (client, sessionId) => {
     }
   };
 
-  if (recoverSessions) {
-    waitForNestedObject(client, 'pupPage')
-      .then(() => {
-        const restartSession = async sessionId => {
-          sessions.delete(sessionId);
-          await client.destroy().catch(_e => {});
-          setupSession(sessionId);
-        };
-        client.pupPage.once('close', () => {
-          // emitted when the page closes
-          logger.warn({ sessionId }, 'Browser page closed. Restoring');
-          restartSession(sessionId);
-        });
-        client.pupPage.once('error', () => {
-          // emitted when the page crashes
-          logger.warn({ sessionId }, 'Error occurred on browser page. Restoring');
-          restartSession(sessionId);
-        });
-      })
-      .catch(_e => {});
-  }
+  waitForNestedObject(client, 'pupPage')
+    .then(() => {
+      // Always attached: when WhatsApp Web breaks its own internals, the page console is where it
+      // says so first — a minified DataError out of IndexedDB never reaches us any other way.
+      // `debug` because WhatsApp Web is chatty; raise LOG_LEVEL when something is being diagnosed.
+      client.pupPage
+        .on('console', message => logger.debug({ sessionId, type: message.type() }, `Page console: ${message.text()}`))
+        .on('pageerror', ({ message }) => logger.error({ sessionId, message }, 'Page error occurred'));
+
+      if (!recoverSessions) {
+        return;
+      }
+      const restartSession = async sessionId => {
+        sessions.delete(sessionId);
+        await client.destroy().catch(_e => {});
+        setupSession(sessionId);
+      };
+      client.pupPage.once('close', () => {
+        // emitted when the page closes
+        logger.warn({ sessionId }, 'Browser page closed. Restoring');
+        restartSession(sessionId);
+      });
+      client.pupPage.once('error', () => {
+        // emitted when the page crashes
+        logger.warn({ sessionId }, 'Error occurred on browser page. Restoring');
+        restartSession(sessionId);
+      });
+    })
+    .catch(_e => {});
 
   if (isEventEnabled('auth_failure')) {
     client.on('auth_failure', msg => {
@@ -507,11 +516,17 @@ const initializeEvents = (client, sessionId) => {
     });
   }
 
-  if (isEventEnabled('ready')) {
-    client.on('ready', () => {
+  // Always registered, and `on` rather than `once`: the page-side half of the patches lives on
+  // WhatsApp Web's own prototypes, and `ready` fires again on every reconnect — a reload wipes them.
+  // The webhook stays gated, the patch does not: a session with `ready` in DISABLED_CALLBACKS still
+  // needs its ids back. Awaited before the emit so a consumer that reacts to `ready` by sending a
+  // message right away does not race the patch.
+  client.on('ready', async () => {
+    await applyPagePatches(client, sessionId);
+    if (isEventEnabled('ready')) {
       emit('ready');
-    });
-  }
+    }
+  });
 
   if (isEventEnabled('contact_changed')) {
     client.on('contact_changed', async (message, oldId, newId, isContact) => {

@@ -11,6 +11,9 @@ const TEST_PORT = 3989;
 process.env.API_KEY = 'test_api_key';
 process.env.SESSIONS_PATH = './sessions_test_lid';
 process.env.BASE_WEBHOOK_URL = `http://localhost:${TEST_PORT}/localCallbackExample`;
+// Every capture test below emits via setImmediate, so 200ms is ample — and it keeps the one test
+// that lets the capture time out from costing the full 8s default.
+process.env.OWN_MESSAGE_CAPTURE_TIMEOUT_MS = '200';
 
 const app = (await import('../src/app')).default;
 const { sessions } = require('../src/sessions');
@@ -106,6 +109,23 @@ describe('sendMessage on LID chats', () => {
     expect(response.body.message.id.id).toBe('DIRECT');
     expect(client.listenerCount('message_create')).toBe(0);
   });
+  it('reports the missing message instead of an empty success', async () => {
+    const client = buildClient({ sendMessage: async () => undefined });
+    sessions.set(SESSION_ID, client);
+
+    const response = await request(app)
+      .post(`/client/sendMessage/${SESSION_ID}`)
+      .set('x-api-key', 'test_api_key')
+      .send({ chatId: CHAT_ID, contentType: 'string', content: 'sem retorno' });
+
+    // not a 500: the library looks the message up only after handing it to the chat, so a retry
+    // would send the contact a second copy of something they already have
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.message).toBeNull();
+    expect(response.body.warning).toMatch(/did not return the sent message/);
+    expect(client.listenerCount('message_create')).toBe(0);
+  });
 });
 
 describe('message lookup on LID chats', () => {
@@ -150,6 +170,26 @@ describe('message lookup on LID chats', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
+  });
+
+  it('resolves an incoming message through the false_ serialized id', async () => {
+    const tried = [];
+    const client = buildClient({
+      getMessageById: async serializedId => {
+        tried.push(serializedId);
+        return serializedId === `false_${CHAT_ID}_${MESSAGE_ID}` ? { ...buildMessage('recebido'), react: async () => ({ ok: true }) } : null;
+      },
+      getChatById: async () => {
+        throw new Error('the chat scan must not be reached');
+      },
+    });
+    sessions.set(SESSION_ID, client);
+
+    const response = await request(app).post(`/message/react/${SESSION_ID}`).set('x-api-key', 'test_api_key').send({ chatId: CHAT_ID, messageId: MESSAGE_ID, reaction: '👍' });
+
+    expect(response.status).toBe(200);
+    // the outgoing candidates keep being tried first
+    expect(tried).toEqual([`true_${CHAT_ID}_${MESSAGE_ID}_out`, `true_${CHAT_ID}_${MESSAGE_ID}`, `false_${CHAT_ID}_${MESSAGE_ID}`]);
   });
 
   it('answers Message not Found when neither lookup resolves', async () => {

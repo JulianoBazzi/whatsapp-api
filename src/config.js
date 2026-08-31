@@ -7,6 +7,9 @@ const enableLocalCallbackExample = (process.env.ENABLE_LOCAL_CALLBACK_EXAMPLE ||
 const globalApiKey = process.env.API_KEY;
 const baseWebhookURL = process.env.BASE_WEBHOOK_URL;
 const maxAttachmentSize = parseInt(process.env.MAX_ATTACHMENT_SIZE, 10) || 10000000;
+// How long sendMessage waits on `message_create` when the library returns nothing. The request is
+// held open for that long, so it is worth being able to tune it without a code change.
+const ownMessageCaptureTimeoutMs = parseInt(process.env.OWN_MESSAGE_CAPTURE_TIMEOUT_MS, 10) || 8000;
 const setMessagesAsSeen = (process.env.SET_MESSAGES_AS_SEEN || '').toLowerCase() === 'true';
 const disabledCallbacks = process.env.DISABLED_CALLBACKS ? process.env.DISABLED_CALLBACKS.split('|') : [];
 const enableSwaggerEndpoint = (process.env.ENABLE_SWAGGER_ENDPOINT || '').toLowerCase() === 'true';
@@ -53,6 +56,7 @@ module.exports = {
   globalApiKey,
   baseWebhookURL,
   maxAttachmentSize,
+  ownMessageCaptureTimeoutMs,
   setMessagesAsSeen,
   disabledCallbacks,
   enableSwaggerEndpoint,

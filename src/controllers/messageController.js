@@ -17,7 +17,10 @@ const _serializedMessageIds = (messageId, chatId) => {
   if (String(messageId).includes('_')) {
     return [messageId];
   }
-  return [`true_${chatId}_${messageId}_out`, `true_${chatId}_${messageId}`];
+  // The `false_` candidates are what incoming messages serialize to. Without them every inbound
+  // media lookup fell through to the fetchMessages scan below, which is the slow path and the only
+  // one left when Msg.get misses. New candidates go last so the outgoing ones keep winning first.
+  return [`true_${chatId}_${messageId}_out`, `true_${chatId}_${messageId}`, `false_${chatId}_${messageId}`, `false_${chatId}_${messageId}_in`];
 };
 
 const _getMessageBySerializedId = async (client, messageId, chatId) => {
@@ -103,7 +106,7 @@ const deleteMessage = async (req, res) => {
         properties: {
           chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
           messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
-          everyone: { type: 'boolean', description: 'If true, delete/download for everyone when supported', example: true }
+          everyone: { type: 'boolean', description: 'If true, delete for everyone when supported', example: true }
         }
       }
     }
@@ -130,7 +133,6 @@ const deleteMessage = async (req, res) => {
  * @param {string} req.params.sessionId - The session ID.
  * @param {string} req.body.messageId - The message ID.
  * @param {string} req.body.chatId - The chat ID.
- * @param {boolean} req.body.everyone - Whether to download the media for everyone or just the sender.
  * @returns {Promise<void>} - A Promise that resolves with no value when the function completes.
  */
 const downloadMedia = async (req, res) => {
@@ -144,19 +146,18 @@ const downloadMedia = async (req, res) => {
         type: 'object',
         properties: {
           chatId: { type: 'string', description: 'The Chat id which contains the message', example: '6281288888888@c.us' },
-          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' },
-          everyone: { type: 'boolean', description: 'If true, delete/download for everyone when supported', example: true }
+          messageId: { type: 'string', description: 'Unique whatsApp identifier for the message', example: 'ABCDEF999999999' }
         }
       }
     }
     */
-    const { messageId, chatId, everyone } = req.body;
+    const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
     const message = await _getMessageById(client, messageId, chatId);
     if (!message) {
       throw new Error('Message not Found');
     }
-    const messageMedia = await message.downloadMedia(everyone);
+    const messageMedia = await message.downloadMedia();
     res.json({ success: true, messageMedia });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
@@ -508,6 +509,13 @@ const reply = async (req, res) => {
         return sendErrorResponse(res, 404, 'contentType invalid, must be string, MessageMedia, MessageMediaFromURL, Location, Contact or Poll');
     }
 
+    // Same contract as sendMessage: the library only looks the message up after handing it to the
+    // chat, so nothing coming back is not a failed send. Report the gap instead of an empty success.
+    if (!messageOut) {
+      logger.warn({ chatId, contentType }, 'Reply sent but the client did not return it');
+      return res.json({ success: true, repliedMessage: null, warning: 'whatsapp-web.js did not return the sent message; it may still have been delivered' });
+    }
+
     res.json({ success: true, repliedMessage: messageOut });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
@@ -643,7 +651,13 @@ const downloadMediaAsData = async (req, res) => {
     if (!message.hasMedia) {
       throw new Error('Message media not Found');
     }
-    const { data, mimetype, filename } = await message.downloadMedia();
+    // downloadMedia() answers undefined for media the server no longer holds, so destructuring the
+    // result straight through turned an expired attachment into a TypeError instead of a 500 body.
+    const messageMedia = await message.downloadMedia();
+    if (!messageMedia) {
+      throw new Error('Message media not Found');
+    }
+    const { data, mimetype, filename } = messageMedia;
     const media = Buffer.from(data, 'base64');
     /* #swagger.responses[200] = {
         description: "Raw media binary.",

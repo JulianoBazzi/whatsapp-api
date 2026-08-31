@@ -1,9 +1,8 @@
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
 const { sendErrorResponse, phoneToChatId, toContactId } = require('../utils');
+const { ownMessageCaptureTimeoutMs } = require('../config');
 const { logger } = require('../logger');
-
-const OWN_MESSAGE_CAPTURE_TIMEOUT = 8000;
 
 const _matchesOwnMessage = (message, chatId, content, contentType) => {
   if (!message?.id?.fromMe) {
@@ -36,7 +35,7 @@ const _captureOwnMessage = (client, chatId, content, contentType) => {
     };
   });
 
-  timer = setTimeout(() => settle(undefined), OWN_MESSAGE_CAPTURE_TIMEOUT);
+  timer = setTimeout(() => settle(undefined), ownMessageCaptureTimeoutMs);
   client.on('message_create', onMessageCreate);
 
   return { promise, cancel: () => settle(undefined) };
@@ -174,8 +173,13 @@ const sendMessage = async (req, res) => {
       messageOut = await capture.promise;
     }
 
+    // The library hands the message to the chat and only then looks it up, so nothing coming back
+    // does not mean nothing was sent — a 500 here would invite the caller to deliver a second copy of
+    // something the contact already has. Say plainly that there is no id to correlate on instead of
+    // answering a bare { success: true } with no `message` key at all.
     if (!messageOut) {
-      logger.warn({ chatId, contentType }, 'Message sent but the client did not return it');
+      logger.warn({ chatId, contentType }, 'Message sent but neither the client nor message_create returned it');
+      return res.json({ success: true, message: null, warning: 'whatsapp-web.js did not return the sent message; it may still have been delivered' });
     }
 
     res.json({ success: true, message: messageOut });

@@ -1,6 +1,6 @@
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
-const { sendErrorResponse, toContactId } = require('../utils');
+const { sendErrorResponse, toContactId, captureOwnMessage } = require('../utils');
 const { logger } = require('../logger');
 
 /**
@@ -426,6 +426,8 @@ const react = async (req, res) => {
 const reply = async (req, res) => {
   // #swagger.summary = 'Reply to message'
   // #swagger.description = 'Replies to a message with string, media, location, contact, or poll content.'
+  let capture = null;
+
   try {
     /*
     #swagger.requestBody = {
@@ -457,6 +459,10 @@ const reply = async (req, res) => {
     if (!message) {
       throw new Error('Message not Found');
     }
+
+    // Same recovery as sendMessage, on the chat the reply actually lands in. `expectQuoted` keeps a
+    // plain message sent in the same instant with the same text from being mistaken for the reply.
+    capture = captureOwnMessage(client, destinationChatId || chatId, content, contentType, true);
 
     let messageOut;
     switch (contentType) {
@@ -509,16 +515,22 @@ const reply = async (req, res) => {
         return sendErrorResponse(res, 404, 'contentType invalid, must be string, MessageMedia, MessageMediaFromURL, Location, Contact or Poll');
     }
 
+    if (!messageOut) {
+      messageOut = await capture.promise;
+    }
+
     // Same contract as sendMessage: the library only looks the message up after handing it to the
     // chat, so nothing coming back is not a failed send. Report the gap instead of an empty success.
     if (!messageOut) {
-      logger.warn({ chatId, contentType }, 'Reply sent but the client did not return it');
+      logger.warn({ chatId, contentType }, 'Reply sent but neither the client nor message_create returned it');
       return res.json({ success: true, repliedMessage: null, warning: 'whatsapp-web.js did not return the sent message; it may still have been delivered' });
     }
 
     res.json({ success: true, repliedMessage: messageOut });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
+  } finally {
+    capture?.cancel();
   }
 };
 

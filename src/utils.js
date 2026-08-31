@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { isValidPhone, onlyNumbers } = require('@julianobazzi/utils');
-const { globalApiKey, disabledCallbacks, webhookTimeoutMs, webhookRetries, webhookRetryDelayMs } = require('./config');
+const { globalApiKey, disabledCallbacks, webhookTimeoutMs, webhookRetries, webhookRetryDelayMs, ownMessageCaptureTimeoutMs } = require('./config');
 const { logger } = require('./logger');
 
 // Pause execution for the given number of milliseconds
@@ -112,6 +112,53 @@ const toContactId = contactId => {
   return `${value}@c.us`;
 };
 
+// On WhatsApp Web builds that renamed `_serialized`, the library loses the message it has just sent
+// and hands back nothing. The message did go out though, and it comes back on `message_create` — so
+// watch that event and recover it from there. Matching is on the chat plus, for text, the body.
+// `expectQuoted` narrows a reply to messages that actually carry a quote, so a plain message sent in
+// the same instant with the same text is not mistaken for it.
+const matchesOwnMessage = (message, chatId, content, contentType, expectQuoted = false) => {
+  if (!message?.id?.fromMe) {
+    return false;
+  }
+  if (message.id.remote !== chatId && message.to !== chatId) {
+    return false;
+  }
+  if (expectQuoted && !message.hasQuotedMsg) {
+    return false;
+  }
+  if (contentType === 'string' && typeof content === 'string') {
+    return message.body === content;
+  }
+  return true;
+};
+
+// Returns { promise, cancel }. The caller MUST call cancel() in a finally, or the listener and the
+// timer outlive the request.
+const captureOwnMessage = (client, chatId, content, contentType, expectQuoted = false) => {
+  let settle;
+  let timer = null;
+
+  const onMessageCreate = message => {
+    if (matchesOwnMessage(message, chatId, content, contentType, expectQuoted)) {
+      settle(message);
+    }
+  };
+
+  const promise = new Promise(resolve => {
+    settle = message => {
+      clearTimeout(timer);
+      client.off('message_create', onMessageCreate);
+      resolve(message);
+    };
+  });
+
+  timer = setTimeout(() => settle(undefined), ownMessageCaptureTimeoutMs);
+  client.on('message_create', onMessageCreate);
+
+  return { promise, cancel: () => settle(undefined) };
+};
+
 module.exports = {
   triggerWebhook,
   sendErrorResponse,
@@ -122,4 +169,6 @@ module.exports = {
   sleep,
   phoneToChatId,
   toContactId,
+  matchesOwnMessage,
+  captureOwnMessage,
 };

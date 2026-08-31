@@ -125,6 +125,121 @@ describe('sendMessage on LID chats', () => {
     expect(response.body.message).toBeNull();
     expect(response.body.warning).toMatch(/did not return the sent message/);
     expect(client.listenerCount('message_create')).toBe(0);
+    // The only test here that waits the capture out instead of resolving it. It flaked twice at the
+    // default 15s while api.test.js was still tearing a real Chromium down — the wait itself is
+    // OWN_MESSAGE_CAPTURE_TIMEOUT_MS (200ms above), so the margin is for a starved event loop.
+  }, 30000);
+});
+
+describe('reply on LID chats', () => {
+  const buildReplyClient = overrides => {
+    const client = buildClient({
+      getMessageById: async () => ({
+        ...buildMessage('pergunta'),
+        reply: async content => {
+          setImmediate(() => client.emit('message_create', buildMessage(content, { hasQuotedMsg: true })));
+          return undefined;
+        },
+      }),
+      ...overrides,
+    });
+    return client;
+  };
+
+  const postReply = (content = 'resposta') =>
+    request(app).post(`/message/reply/${SESSION_ID}`).set('x-api-key', 'test_api_key').send({ chatId: CHAT_ID, messageId: MESSAGE_ID, contentType: 'string', content });
+
+  it('recovers the reply from message_create when the client returns nothing', async () => {
+    const client = buildReplyClient();
+    sessions.set(SESSION_ID, client);
+
+    const response = await postReply();
+
+    expect(response.status).toBe(200);
+    expect(response.body.repliedMessage.body).toBe('resposta');
+    expect(client.listenerCount('message_create')).toBe(0);
+  });
+
+  // a plain message sent in the same instant with the same text is not the reply
+  it('ignores a matching message that carries no quote', async () => {
+    const client = buildClient({
+      getMessageById: async () => ({
+        ...buildMessage('pergunta'),
+        reply: async content => {
+          setImmediate(() => client.emit('message_create', buildMessage(content)));
+          return undefined;
+        },
+      }),
+    });
+    sessions.set(SESSION_ID, client);
+
+    const response = await postReply();
+
+    expect(response.status).toBe(200);
+    expect(response.body.repliedMessage).toBeNull();
+    expect(response.body.warning).toMatch(/did not return the sent message/);
+    expect(client.listenerCount('message_create')).toBe(0);
+  });
+
+  it('returns the reply directly when the client does hand it back', async () => {
+    const replied = buildMessage('resposta', { hasQuotedMsg: true });
+    const client = buildClient({
+      getMessageById: async () => ({ ...buildMessage('pergunta'), reply: async () => replied }),
+    });
+    sessions.set(SESSION_ID, client);
+
+    const response = await postReply();
+
+    expect(response.status).toBe(200);
+    expect(response.body.repliedMessage.body).toBe('resposta');
+    expect(client.listenerCount('message_create')).toBe(0);
+  });
+});
+
+describe('POST /client/getContactLidAndPhone', () => {
+  it('resolves the lid and the phone number behind an id', async () => {
+    let asked = null;
+    const client = buildClient({
+      getContactLidAndPhone: async userIds => {
+        asked = userIds;
+        return [{ lid: CHAT_ID, pn: '556699999999@c.us' }];
+      },
+    });
+    sessions.set(SESSION_ID, client);
+
+    const response = await request(app)
+      .post(`/client/getContactLidAndPhone/${SESSION_ID}`)
+      .set('x-api-key', 'test_api_key')
+      .send({ userIds: [CHAT_ID] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: true, result: [{ lid: CHAT_ID, pn: '556699999999@c.us' }] });
+    expect(asked).toEqual([CHAT_ID]);
+  });
+
+  it('accepts a single id and qualifies bare digits', async () => {
+    let asked = null;
+    const client = buildClient({
+      getContactLidAndPhone: async userIds => {
+        asked = userIds;
+        return [{ lid: CHAT_ID, pn: '556699999999@c.us' }];
+      },
+    });
+    sessions.set(SESSION_ID, client);
+
+    const response = await request(app).post(`/client/getContactLidAndPhone/${SESSION_ID}`).set('x-api-key', 'test_api_key').send({ userIds: '556699999999' });
+
+    expect(response.status).toBe(200);
+    expect(asked).toEqual(['556699999999@c.us']);
+  });
+
+  it('answers 422 when no id was given', async () => {
+    sessions.set(SESSION_ID, buildClient({}));
+
+    const response = await request(app).post(`/client/getContactLidAndPhone/${SESSION_ID}`).set('x-api-key', 'test_api_key').send({});
+
+    expect(response.status).toBe(422);
+    expect(response.body).toEqual({ success: false, error: 'userIds is required' });
   });
 });
 

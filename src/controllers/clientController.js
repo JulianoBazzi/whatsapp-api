@@ -1,45 +1,7 @@
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
-const { sendErrorResponse, phoneToChatId, toContactId } = require('../utils');
-const { ownMessageCaptureTimeoutMs } = require('../config');
+const { sendErrorResponse, phoneToChatId, toContactId, captureOwnMessage } = require('../utils');
 const { logger } = require('../logger');
-
-const _matchesOwnMessage = (message, chatId, content, contentType) => {
-  if (!message?.id?.fromMe) {
-    return false;
-  }
-  if (message.id.remote !== chatId && message.to !== chatId) {
-    return false;
-  }
-  if (contentType === 'string' && typeof content === 'string') {
-    return message.body === content;
-  }
-  return true;
-};
-
-const _captureOwnMessage = (client, chatId, content, contentType) => {
-  let settle;
-  let timer = null;
-
-  const onMessageCreate = message => {
-    if (_matchesOwnMessage(message, chatId, content, contentType)) {
-      settle(message);
-    }
-  };
-
-  const promise = new Promise(resolve => {
-    settle = message => {
-      clearTimeout(timer);
-      client.off('message_create', onMessageCreate);
-      resolve(message);
-    };
-  });
-
-  timer = setTimeout(() => settle(undefined), ownMessageCaptureTimeoutMs);
-  client.on('message_create', onMessageCreate);
-
-  return { promise, cancel: () => settle(undefined) };
-};
 
 /**
  * Send a message to a chat using the WhatsApp API
@@ -115,7 +77,7 @@ const sendMessage = async (req, res) => {
       chatId = phoneToChatId(chatId) || chatId;
     }
 
-    capture = _captureOwnMessage(client, chatId, content, contentType);
+    capture = captureOwnMessage(client, chatId, content, contentType);
 
     let messageOut;
     switch (contentType) {
@@ -291,6 +253,53 @@ const getNumberId = async (req, res) => {
     // Normalize brazilian phone numbers; other formats are passed through unchanged
     const normalizedNumber = (number && !String(number).includes('@') && phoneToChatId(number)) || number;
     const result = await client.getNumberId(normalizedNumber);
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Resolve the lid and the phone number behind one or more user ids
+ *
+ * @async
+ * @function getContactLidAndPhone
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to resolve the ids with
+ * @param {string[]|string} req.body.userIds - The user ids to resolve, as @lid, @c.us or bare digits
+ * @returns {Object} - Response object with one { lid, pn } pair per requested id
+ * @throws Will throw an error if the ids cannot be resolved
+ */
+const getContactLidAndPhone = async (req, res) => {
+  // #swagger.summary = 'Get contact lid and phone'
+  // #swagger.description = 'Resolves the lid and the phone number behind one or more user ids.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          userIds: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'The user ids to resolve (\"@c.us\" is appended to bare digits; @lid is kept as is)',
+            example: ['6281288888888@c.us']
+          },
+        }
+      },
+    }
+  */
+  try {
+    const { userIds } = req.body;
+    // A single id is accepted too: the library takes either, and callers resolving one contact
+    // should not have to wrap it in an array.
+    const requested = (Array.isArray(userIds) ? userIds : [userIds]).map(toContactId).filter(Boolean);
+    if (!requested.length) {
+      return sendErrorResponse(res, 422, 'userIds is required');
+    }
+    const client = sessions.get(req.params.sessionId);
+    const result = await client.getContactLidAndPhone(requested);
     res.json({ success: true, result });
   } catch (error) {
     sendErrorResponse(res, 500, error.message);
@@ -1527,6 +1536,389 @@ const setProfilePicture = async (req, res) => {
   }
 };
 
+/**
+ * Count the devices a user is connected with
+ *
+ * @async
+ * @function getContactDeviceCount
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {string} req.body.userId - The id of the user to count devices for
+ * @returns {Object} - Response object with the device count
+ * @throws Will throw an error if the count cannot be retrieved
+ */
+const getContactDeviceCount = async (req, res) => {
+  // #swagger.summary = 'Get user device count'
+  // #swagger.description = 'Each WhatsApp Web connection counts as one device, and the phone (when present) counts as one — so a regular user with one web session answers 2.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          userId: { type: 'string', description: 'The id of the user', example: '6281288888888@c.us' }
+        }
+      },
+    }
+  */
+  try {
+    const { userId } = req.body;
+    const contactId = toContactId(userId);
+    if (!contactId) {
+      return sendErrorResponse(res, 422, 'userId is required');
+    }
+    const client = sessions.get(req.params.sessionId);
+    const result = await client.getContactDeviceCount(contactId);
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Force a reset of the connection state for the client
+ *
+ * @async
+ * @function resetState
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to reset
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the state cannot be reset
+ */
+const resetState = async (req, res) => {
+  // #swagger.summary = 'Reset connection state'
+  // #swagger.description = 'Forces a reset of the connection state for the client, without touching the stored credentials.'
+  try {
+    const client = sessions.get(req.params.sessionId);
+    await client.resetState();
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Ask the phone to sync the history of a chat
+ *
+ * @async
+ * @function syncHistory
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {string} req.body.chatId - The chat to sync
+ * @returns {Object} - Response object with true when a sync was actually requested
+ * @throws Will throw an error if the sync cannot be requested
+ */
+const syncHistory = async (req, res) => {
+  // #swagger.summary = 'Sync chat history'
+  // #swagger.description = 'Asks the phone to send the older messages of a chat. Answers false when there is nothing left to sync.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The id of the chat', example: '6281288888888@c.us' }
+        }
+      },
+    }
+  */
+  try {
+    const { chatId } = req.body;
+    if (!chatId) {
+      return sendErrorResponse(res, 422, 'chatId is required');
+    }
+    const client = sessions.get(req.params.sessionId);
+    const result = await client.syncHistory(chatId);
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Turn automatic download of audio on or off
+ *
+ * @async
+ * @function setAutoDownloadAudio
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {boolean} req.body.flag - Whether audio should be downloaded automatically
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the setting cannot be changed
+ */
+const setAutoDownloadAudio = async (req, res) => {
+  // #swagger.summary = 'Set auto download audio'
+  // #swagger.description = 'Turns automatic download of audio on or off for this session.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          flag: { type: 'boolean', description: 'Whether the media should be downloaded automatically', example: true }
+        }
+      },
+    }
+  */
+  try {
+    const { flag = true } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    await client.setAutoDownloadAudio(flag);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Turn automatic download of documents on or off
+ *
+ * @async
+ * @function setAutoDownloadDocuments
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {boolean} req.body.flag - Whether documents should be downloaded automatically
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the setting cannot be changed
+ */
+const setAutoDownloadDocuments = async (req, res) => {
+  // #swagger.summary = 'Set auto download documents'
+  // #swagger.description = 'Turns automatic download of documents on or off for this session.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          flag: { type: 'boolean', description: 'Whether the media should be downloaded automatically', example: true }
+        }
+      },
+    }
+  */
+  try {
+    const { flag = true } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    await client.setAutoDownloadDocuments(flag);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Turn automatic download of photos on or off
+ *
+ * @async
+ * @function setAutoDownloadPhotos
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {boolean} req.body.flag - Whether photos should be downloaded automatically
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the setting cannot be changed
+ */
+const setAutoDownloadPhotos = async (req, res) => {
+  // #swagger.summary = 'Set auto download photos'
+  // #swagger.description = 'Turns automatic download of photos on or off for this session.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          flag: { type: 'boolean', description: 'Whether the media should be downloaded automatically', example: true }
+        }
+      },
+    }
+  */
+  try {
+    const { flag = true } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    await client.setAutoDownloadPhotos(flag);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Turn automatic download of videos on or off
+ *
+ * @async
+ * @function setAutoDownloadVideos
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {boolean} req.body.flag - Whether videos should be downloaded automatically
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the setting cannot be changed
+ */
+const setAutoDownloadVideos = async (req, res) => {
+  // #swagger.summary = 'Set auto download videos'
+  // #swagger.description = 'Turns automatic download of videos on or off for this session.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          flag: { type: 'boolean', description: 'Whether the media should be downloaded automatically', example: true }
+        }
+      },
+    }
+  */
+  try {
+    const { flag = true } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    await client.setAutoDownloadVideos(flag);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Change the background synchronization setting
+ *
+ * @async
+ * @function setBackgroundSync
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {boolean} req.body.flag - Whether background sync should be on
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the setting cannot be changed
+ */
+const setBackgroundSync = async (req, res) => {
+  // #swagger.summary = 'Set background sync'
+  // #swagger.description = 'Changes the background synchronization setting. Takes effect only after the session is restarted.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          flag: { type: 'boolean', description: 'Whether background sync should be on', example: true }
+        }
+      },
+    }
+  */
+  try {
+    const { flag = true } = req.body;
+    const client = sessions.get(req.params.sessionId);
+    await client.setBackgroundSync(flag);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Delete the current user's profile picture
+ *
+ * @async
+ * @function deleteProfilePicture
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @returns {Object} - Response object with the result of the deletion
+ * @throws Will throw an error if the picture cannot be deleted
+ */
+const deleteProfilePicture = async (req, res) => {
+  // #swagger.summary = 'Delete profile picture'
+  // #swagger.description = "Deletes the current user's profile picture."
+  try {
+    const client = sessions.get(req.params.sessionId);
+    const result = await client.deleteProfilePicture();
+    res.json({ success: true, result });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Open a chat window in the WhatsApp Web interface
+ *
+ * @async
+ * @function openChatWindow
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {string} req.body.chatId - The chat to open
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the chat cannot be opened
+ */
+const openChatWindow = async (req, res) => {
+  // #swagger.summary = 'Open chat window'
+  // #swagger.description = 'Opens a chat in the WhatsApp Web interface the session is driving. Useful before taking a screenshot.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          chatId: { type: 'string', description: 'The id of the chat', example: '6281288888888@c.us' }
+        }
+      },
+    }
+  */
+  try {
+    const { chatId } = req.body;
+    if (!chatId) {
+      return sendErrorResponse(res, 422, 'chatId is required');
+    }
+    const client = sessions.get(req.params.sessionId);
+    await client.interface.openChatWindow(chatId);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
+/**
+ * Open a chat window scrolled to a specific message
+ *
+ * @async
+ * @function openChatWindowAt
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.sessionId - The sessionId to use
+ * @param {string} req.body.messageId - The serialized id of the message to scroll to
+ * @returns {Object} - Response object
+ * @throws Will throw an error if the chat cannot be opened
+ */
+const openChatWindowAt = async (req, res) => {
+  // #swagger.summary = 'Open chat window at message'
+  // #swagger.description = 'Opens the chat that contains a message and scrolls to it. Takes the serialized message id.'
+  /*
+    #swagger.requestBody = {
+      required: true,
+      schema: {
+        type: 'object',
+        properties: {
+          messageId: { type: 'string', description: 'The serialized id of the message', example: 'true_6281288888888@c.us_ABCDEF999999999' }
+        }
+      },
+    }
+  */
+  try {
+    const { messageId } = req.body;
+    if (!messageId) {
+      return sendErrorResponse(res, 422, 'messageId is required');
+    }
+    const client = sessions.get(req.params.sessionId);
+    await client.interface.openChatWindowAt(messageId);
+    res.json({ success: true });
+  } catch (error) {
+    sendErrorResponse(res, 500, error.message);
+  }
+};
+
 module.exports = {
   getClassInfo,
   acceptInvite,
@@ -1538,6 +1930,18 @@ module.exports = {
   getChats,
   getGroups,
   getChatsByLabelId,
+  getContactLidAndPhone,
+  getContactDeviceCount,
+  resetState,
+  syncHistory,
+  setAutoDownloadAudio,
+  setAutoDownloadDocuments,
+  setAutoDownloadPhotos,
+  setAutoDownloadVideos,
+  setBackgroundSync,
+  deleteProfilePicture,
+  openChatWindow,
+  openChatWindowAt,
   getCommonGroups,
   getContactById,
   getContacts,

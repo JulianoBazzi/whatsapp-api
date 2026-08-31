@@ -10,6 +10,12 @@ const maxAttachmentSize = parseInt(process.env.MAX_ATTACHMENT_SIZE, 10) || 10000
 // How long sendMessage waits on `message_create` when the library returns nothing. The request is
 // held open for that long, so it is worth being able to tune it without a code change.
 const ownMessageCaptureTimeoutMs = parseInt(process.env.OWN_MESSAGE_CAPTURE_TIMEOUT_MS, 10) || 8000;
+// How long the page is given to decrypt an attachment before downloadMedia gives up.
+const mediaResolveTimeoutMs = parseInt(process.env.MEDIA_RESOLVE_TIMEOUT_MS, 10) || 10000;
+// Escape hatch for the downloadMedia override in src/patches.js. Unlike the serialized-id patch,
+// which is a no-op on a healthy build, this one replaces the library's own implementation for every
+// session in the process — so it has to be possible to turn off without a redeploy.
+const patchMediaDownloadEnabled = process.env.PATCH_MEDIA_DOWNLOAD ? process.env.PATCH_MEDIA_DOWNLOAD.toLowerCase() === 'true' : true;
 const setMessagesAsSeen = (process.env.SET_MESSAGES_AS_SEEN || '').toLowerCase() === 'true';
 const disabledCallbacks = process.env.DISABLED_CALLBACKS ? process.env.DISABLED_CALLBACKS.split('|') : [];
 const enableSwaggerEndpoint = (process.env.ENABLE_SWAGGER_ENDPOINT || '').toLowerCase() === 'true';
@@ -57,6 +63,8 @@ module.exports = {
   baseWebhookURL,
   maxAttachmentSize,
   ownMessageCaptureTimeoutMs,
+  mediaResolveTimeoutMs,
+  patchMediaDownloadEnabled,
   setMessagesAsSeen,
   disabledCallbacks,
   enableSwaggerEndpoint,

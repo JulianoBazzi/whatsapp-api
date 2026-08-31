@@ -73,6 +73,11 @@ const patchSerializedIds = async client => {
       if (!prototype || Object.getOwnPropertyDescriptor(prototype, '_serialized')) {
         return { patched: false, reason: 'prototype is not patchable' };
       }
+      // A build whose factory hands back a plain object would otherwise put the getter on
+      // Object.prototype, and every object on the page would start answering `_serialized`.
+      if (prototype === Object.prototype) {
+        return { patched: false, reason: 'probe is a plain object' };
+      }
       defineSerialized(prototype, alias);
       return { patched: true, alias };
     };
@@ -309,17 +314,18 @@ const patchMediaDownload = (resolveTimeoutMs = mediaResolveTimeoutMs) => {
 };
 
 // Runs on every `ready`, because the page-side half of the patch lives on WhatsApp Web's own
-// prototypes and a page reload wipes it. Never rejects: the caller is an EventEmitter listener, and
-// a rejection there would surface as an unhandled rejection.
+// prototypes and a page reload wipes it. Never rejects, and everything has to stay inside the try:
+// the caller is an async EventEmitter listener, so a rejection here is an unhandled rejection — which
+// takes the process down on Node 24 — and it would also skip the `ready` webhook.
 const applyPagePatches = async (client, sessionId) => {
-  if (patchMediaDownloadEnabled) {
-    patchMediaDownload();
-  }
   try {
+    if (patchMediaDownloadEnabled) {
+      patchMediaDownload();
+    }
     const result = await patchSerializedIds(client);
     logger.info({ sessionId, ...result }, 'Serialized id patch');
   } catch (error) {
-    logger.error({ sessionId, err: error }, 'Failed to patch serialized ids');
+    logger.error({ sessionId, err: error }, 'Failed to patch the page');
   }
 };
 

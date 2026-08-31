@@ -130,6 +130,33 @@ describe('patchSerializedIds', () => {
     expect(Object.getOwnPropertyDescriptor(fakeWindow.MsgKey.prototype, '_serialized')).toBeUndefined();
   });
 
+  // A build whose factory hands back a plain object instead of a class instance would otherwise put
+  // the getter on Object.prototype, and every object on the page would answer `_serialized`.
+  it('refuses to patch when the probe is a plain object', async () => {
+    const fakeWindow = {
+      require: name => {
+        if (name === 'WAWebWidFactory') {
+          return { createWid: jid => ({ user: jid.split('@')[0], server: 'c.us', $1: jid }) };
+        }
+        if (name === 'WAWebMsgKey') {
+          return class {
+            constructor() {
+              this.id = 'x';
+            }
+          };
+        }
+        throw new Error(`module ${name} is not available`);
+      },
+      WWebJS: { getMessageModel: model => model },
+    };
+
+    const result = await patchSerializedIds(createFakeClient(fakeWindow));
+
+    expect(result.wid).toEqual({ patched: false, reason: 'probe is a plain object' });
+    expect(Object.getOwnPropertyDescriptor(Object.prototype, '_serialized')).toBeUndefined();
+    expect(result.applied).toBe(false);
+  });
+
   describe('once an alias was found', () => {
     let fakeWindow;
 

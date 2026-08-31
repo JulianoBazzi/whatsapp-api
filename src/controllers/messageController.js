@@ -1,6 +1,7 @@
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
 const { sendErrorResponse, toContactId } = require('../utils');
+const { logger } = require('../logger');
 
 /**
  * Get message by its ID from a given chat using the provided client.
@@ -12,13 +13,43 @@ const { sendErrorResponse, toContactId } = require('../utils');
  * @returns {Promise<object>} - A Promise that resolves with the message object that matches the provided ID, or undefined if no such message exists.
  * @throws {Error} - Throws an error if the provided client, message ID or chat ID is invalid.
  */
+const _serializedMessageIds = (messageId, chatId) => {
+  if (String(messageId).includes('_')) {
+    return [messageId];
+  }
+  return [`true_${chatId}_${messageId}_out`, `true_${chatId}_${messageId}`];
+};
+
+const _getMessageBySerializedId = async (client, messageId, chatId) => {
+  for (const serializedId of _serializedMessageIds(messageId, chatId)) {
+    try {
+      const message = await client.getMessageById(serializedId);
+      if (message) {
+        return message;
+      }
+    } catch (error) {
+      logger.warn({ err: error, serializedId }, 'getMessageById failed');
+    }
+  }
+  return undefined;
+};
+
 const _getMessageById = async (client, messageId, chatId) => {
-  const chat = await client.getChatById(chatId);
-  const messages = await chat.fetchMessages({ limit: 100 });
-  const message = messages.find(message => {
-    return message.id.id === messageId;
-  });
-  return message;
+  const messageById = await _getMessageBySerializedId(client, messageId, chatId);
+  if (messageById) {
+    return messageById;
+  }
+
+  try {
+    const chat = await client.getChatById(chatId);
+    const messages = await chat.fetchMessages({ limit: 100 });
+    return messages.find(message => {
+      return message.id.id === messageId;
+    });
+  } catch (error) {
+    logger.warn({ err: error, chatId }, 'fetchMessages lookup failed');
+    return undefined;
+  }
 };
 
 /**

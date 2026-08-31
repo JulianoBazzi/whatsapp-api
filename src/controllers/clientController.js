@@ -3,6 +3,45 @@ const { sessions } = require('../sessions');
 const { sendErrorResponse, phoneToChatId, toContactId } = require('../utils');
 const { logger } = require('../logger');
 
+const OWN_MESSAGE_CAPTURE_TIMEOUT = 8000;
+
+const _matchesOwnMessage = (message, chatId, content, contentType) => {
+  if (!message?.id?.fromMe) {
+    return false;
+  }
+  if (message.id.remote !== chatId && message.to !== chatId) {
+    return false;
+  }
+  if (contentType === 'string' && typeof content === 'string') {
+    return message.body === content;
+  }
+  return true;
+};
+
+const _captureOwnMessage = (client, chatId, content, contentType) => {
+  let settle;
+  let timer = null;
+
+  const onMessageCreate = message => {
+    if (_matchesOwnMessage(message, chatId, content, contentType)) {
+      settle(message);
+    }
+  };
+
+  const promise = new Promise(resolve => {
+    settle = message => {
+      clearTimeout(timer);
+      client.off('message_create', onMessageCreate);
+      resolve(message);
+    };
+  });
+
+  timer = setTimeout(() => settle(undefined), OWN_MESSAGE_CAPTURE_TIMEOUT);
+  client.on('message_create', onMessageCreate);
+
+  return { promise, cancel: () => settle(undefined) };
+};
+
 /**
  * Send a message to a chat using the WhatsApp API
  *
@@ -65,6 +104,8 @@ const sendMessage = async (req, res) => {
     }
   */
 
+  let capture = null;
+
   try {
     const { content, contentType, options } = req.body;
     let { chatId } = req.body;
@@ -74,6 +115,8 @@ const sendMessage = async (req, res) => {
     if (chatId && !String(chatId).includes('@')) {
       chatId = phoneToChatId(chatId) || chatId;
     }
+
+    capture = _captureOwnMessage(client, chatId, content, contentType);
 
     let messageOut;
     switch (contentType) {
@@ -127,9 +170,19 @@ const sendMessage = async (req, res) => {
         return sendErrorResponse(res, 404, 'contentType invalid, must be string, MessageMedia, MessageMediaFromURL, Location, Contact or Poll');
     }
 
+    if (!messageOut) {
+      messageOut = await capture.promise;
+    }
+
+    if (!messageOut) {
+      logger.warn({ chatId, contentType }, 'Message sent but the client did not return it');
+    }
+
     res.json({ success: true, message: messageOut });
   } catch (error) {
     sendErrorResponse(res, 500, error);
+  } finally {
+    capture?.cancel();
   }
 };
 

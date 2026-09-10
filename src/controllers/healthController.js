@@ -63,7 +63,7 @@ const index = async (req, res) => {
 </body>
 </html>`);
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -95,7 +95,7 @@ const ping = async (req, res) => {
     */
     res.json({ success: true, message: 'pong' });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 

@@ -6,6 +6,7 @@ const endpointsFiles = ['./src/routes.js'];
 const doc = {
   info: {
     title: 'WhatsApp API',
+    version: require('./package.json').version,
     description: 'API Wrapper for WhatsAppWebJS',
   },
   servers: [

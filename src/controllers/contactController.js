@@ -25,7 +25,7 @@ const getClassInfo = async (req, res) => {
     }
     res.json({ success: true, result: contact });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -54,7 +54,7 @@ const block = async (req, res) => {
     const result = await contact.block();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -83,7 +83,7 @@ const getAbout = async (req, res) => {
     const result = await contact.getAbout();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -112,7 +112,7 @@ const getChat = async (req, res) => {
     const result = await contact.getChat();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -141,7 +141,7 @@ const getFormattedNumber = async (req, res) => {
     const result = await contact.getFormattedNumber();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -170,7 +170,7 @@ const getCountryCode = async (req, res) => {
     const result = await contact.getCountryCode();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -199,7 +199,7 @@ const getProfilePicUrl = async (req, res) => {
     const result = (await contact.getProfilePicUrl()) || null;
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -228,7 +228,7 @@ const unblock = async (req, res) => {
     const result = await contact.unblock();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 

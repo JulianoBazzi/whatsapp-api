@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "title": "WhatsApp API",
-    "description": "API Wrapper for WhatsAppWebJS",
-    "version": "1.0.0"
+    "version": "1.1.2",
+    "description": "API Wrapper for WhatsAppWebJS"
   },
   "servers": [
     {

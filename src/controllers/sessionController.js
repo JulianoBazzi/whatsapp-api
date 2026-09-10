@@ -72,7 +72,7 @@ const startSession = async (req, res) => {
     waitForNestedObject(setupSessionReturn.client, 'pupPage')
       .then(() => res.json({ success: true, message: setupSessionReturn.message }))
       .catch(err => {
-        sendErrorResponse(res, 500, err.message);
+        sendErrorResponse(res, 500, err);
       });
   } catch (error) {
     /* #swagger.responses[500] = {
@@ -85,7 +85,7 @@ const startSession = async (req, res) => {
     }
     */
     logger.error({ sessionId: req.params.sessionId, err: error }, 'startSession failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -127,7 +127,7 @@ const statusSession = async (req, res) => {
       }
     }
     */
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -175,7 +175,7 @@ const sessionQrCode = async (req, res) => {
       }
     }
     */
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -228,7 +228,7 @@ const sessionQrCodeImage = async (req, res) => {
       }
     }
     */
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -274,7 +274,7 @@ const restartSession = async (req, res) => {
     }
     */
     logger.error({ sessionId: req.params.sessionId, err: error }, 'restartSession failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -320,7 +320,7 @@ const terminateSession = async (req, res) => {
     }
     */
     logger.error({ sessionId: req.params.sessionId, err: error }, 'terminateSession failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -360,7 +360,7 @@ const terminateInactiveSessions = async (req, res) => {
     }
     */
     logger.error({ sessionId: req.params.sessionId, err: error }, 'terminateInactiveSessions failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -400,7 +400,7 @@ const terminateAllSessions = async (req, res) => {
     }
     */
     logger.error({ sessionId: req.params.sessionId, err: error }, 'terminateAllSessions failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -460,7 +460,7 @@ const stopSession = async (req, res) => {
     res.json({ success: true, message: 'Session stopped successfully' });
   } catch (error) {
     logger.error({ sessionId: req.params.sessionId, err: error }, 'stopSession failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -533,7 +533,7 @@ const requestPairingCode = async (req, res) => {
     res.json({ success: true, result });
   } catch (error) {
     logger.error({ sessionId, err: error }, 'requestPairingCode failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -585,7 +585,7 @@ const setWebhook = async (req, res) => {
     res.json(result);
   } catch (error) {
     logger.error({ sessionId, err: error }, 'setWebhook failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -616,7 +616,7 @@ const getWebhook = async (req, res) => {
     res.json(getSessionWebhook(sessionId));
   } catch (error) {
     logger.error({ sessionId, err: error }, 'getWebhook failed');
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 

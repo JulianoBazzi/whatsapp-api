@@ -25,7 +25,7 @@ const getClassInfo = async (req, res) => {
     }
     res.json({ success: true, chat });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -54,7 +54,7 @@ const clearMessages = async (req, res) => {
     const clearMessages = await chat.clearMessages();
     res.json({ success: true, clearMessages });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -83,7 +83,7 @@ const clearState = async (req, res) => {
     const clearState = await chat.clearState();
     res.json({ success: true, clearState });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -113,7 +113,7 @@ const deleteChat = async (req, res) => {
     const deleteChat = await chat.delete();
     res.json({ success: true, deleteChat });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -167,7 +167,7 @@ const fetchMessages = async (req, res) => {
     const messages = await chat.fetchMessages(searchOptions);
     res.json({ success: true, messages });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -195,7 +195,7 @@ const getContact = async (req, res) => {
     const contact = await chat.getContact();
     res.json({ success: true, contact });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -224,7 +224,7 @@ const sendStateRecording = async (req, res) => {
     const sendStateRecording = await chat.sendStateRecording();
     res.json({ success: true, sendStateRecording });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -253,7 +253,7 @@ const sendStateTyping = async (req, res) => {
     const sendStateTyping = await chat.sendStateTyping();
     res.json({ success: true, sendStateTyping });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -282,7 +282,7 @@ const markUnread = async (req, res) => {
     await chat.markUnread();
     res.json({ success: true });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -311,7 +311,7 @@ const sendSeen = async (req, res) => {
     const result = await chat.sendSeen();
     res.json({ success: true, result });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -340,7 +340,7 @@ const getLabels = async (req, res) => {
     const labels = await chat.getLabels();
     res.json({ success: true, labels });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 
@@ -385,7 +385,7 @@ const changeLabels = async (req, res) => {
     await chat.changeLabels(labelIds);
     res.json({ success: true });
   } catch (error) {
-    sendErrorResponse(res, 500, error.message);
+    sendErrorResponse(res, 500, error);
   }
 };
 

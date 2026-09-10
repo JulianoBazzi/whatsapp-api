@@ -12,10 +12,15 @@ const maxAttachmentSize = parseInt(process.env.MAX_ATTACHMENT_SIZE, 10) || 10000
 const ownMessageCaptureTimeoutMs = parseInt(process.env.OWN_MESSAGE_CAPTURE_TIMEOUT_MS, 10) || 8000;
 // How long the page is given to decrypt an attachment before downloadMedia gives up.
 const mediaResolveTimeoutMs = parseInt(process.env.MEDIA_RESOLVE_TIMEOUT_MS, 10) || 10000;
-// Escape hatch for the downloadMedia override in src/patches.js. Unlike the serialized-id patch,
-// which is a no-op on a healthy build, this one replaces the library's own implementation for every
-// session in the process — so it has to be possible to turn off without a redeploy.
-const patchMediaDownloadEnabled = process.env.PATCH_MEDIA_DOWNLOAD ? process.env.PATCH_MEDIA_DOWNLOAD.toLowerCase() === 'true' : true;
+// Controls the downloadMedia override in src/patches.js. Unlike the serialized-id patch, which is a
+// no-op on a healthy build, this one replaces the library's own implementation for every session in
+// the process: `true` (default) only engages it on a build that renamed the ids, `force` engages it
+// everywhere (to exercise it before the build flips), `false` never.
+const parsePatchMediaDownloadMode = value => {
+  const normalized = (value || 'true').toLowerCase();
+  return normalized === 'false' || normalized === 'force' ? normalized : 'true';
+};
+const patchMediaDownloadMode = parsePatchMediaDownloadMode(process.env.PATCH_MEDIA_DOWNLOAD);
 const setMessagesAsSeen = (process.env.SET_MESSAGES_AS_SEEN || '').toLowerCase() === 'true';
 const disabledCallbacks = process.env.DISABLED_CALLBACKS ? process.env.DISABLED_CALLBACKS.split('|') : [];
 const enableSwaggerEndpoint = (process.env.ENABLE_SWAGGER_ENDPOINT || '').toLowerCase() === 'true';
@@ -64,7 +69,7 @@ module.exports = {
   maxAttachmentSize,
   ownMessageCaptureTimeoutMs,
   mediaResolveTimeoutMs,
-  patchMediaDownloadEnabled,
+  patchMediaDownloadMode,
   setMessagesAsSeen,
   disabledCallbacks,
   enableSwaggerEndpoint,

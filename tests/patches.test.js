@@ -1,9 +1,12 @@
 import { createRequire } from 'node:module';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { patchSerializedIds, patchMediaDownload } = require('../src/patches');
+const { patchSerializedIds, patchMediaDownload, applyPagePatches } = require('../src/patches');
 const { Message } = require('whatsapp-web.js');
+
+// Captured before any test replaces it: the media tests below patch the real prototype
+const stockDownloadMedia = Message.prototype.downloadMedia;
 
 // Builds a stand-in for the WhatsApp Web page context. `widField` and `msgKeyField` name the property
 // each class exposes its serialized id under: `_serialized` on healthy builds, and a minified alias
@@ -75,6 +78,10 @@ const newMsgKey = fakeWindow =>
 // fileParallelism is off, so a leaked global.window would be visible to every later test file
 afterEach(() => {
   delete global.window;
+});
+
+afterAll(() => {
+  Message.prototype.downloadMedia = stockDownloadMedia;
 });
 
 describe('patchSerializedIds', () => {
@@ -333,16 +340,18 @@ describe('patchMediaDownload', () => {
     expect(fakeWindow.calls.getMessagesById).toBe(0);
   });
 
-  it('reports why the media is missing rather than a minified class name', async () => {
+  // The stock downloadMedia answers undefined when there is nothing to fetch, and the controllers
+  // turn that into 200 + messageMedia: null. A caller that checked for null must keep working.
+  it('answers no media when the message is not in the page collection', async () => {
     const fakeWindow = createFakeMediaWindow({ indexedKeys: [], models: ['other'] });
 
-    await expect(download(fakeWindow)).rejects.toThrow('message is not in the page collection');
+    await expect(download(fakeWindow)).resolves.toBeUndefined();
   });
 
-  it('reports a message that carries no mediaData', async () => {
+  it('answers no media for a message that carries no mediaData', async () => {
     const fakeWindow = createFakeMediaWindow({ indexedKeys: indexed, mediaData: null });
 
-    await expect(download(fakeWindow)).rejects.toThrow('message carries no mediaData');
+    await expect(download(fakeWindow)).resolves.toBeUndefined();
   });
 
   it('takes the blob the page decrypted instead of decrypting a second time', async () => {
@@ -439,5 +448,61 @@ describe('patchMediaDownload', () => {
 
     await expect(download(fakeWindow, { hasMedia: false })).resolves.toBeUndefined();
     expect(fakeWindow.calls.get).toEqual([]);
+  });
+});
+
+describe('applyPagePatches', () => {
+  const renamed = () => createFakeWindow({ widField: '$1', msgKeyField: '$1' });
+
+  beforeEach(() => {
+    Message.prototype.downloadMedia = stockDownloadMedia;
+  });
+
+  it('leaves the stock downloadMedia alone on a healthy build', async () => {
+    await applyPagePatches(createFakeClient(createFakeWindow()), 'test', 'true');
+
+    expect(Message.prototype.downloadMedia).toBe(stockDownloadMedia);
+  });
+
+  it('engages the media override once the build renamed the ids', async () => {
+    await applyPagePatches(createFakeClient(renamed()), 'test', 'true');
+
+    expect(Message.prototype.downloadMedia).not.toBe(stockDownloadMedia);
+  });
+
+  it('keeps the override engaged on the next ready of the same page', async () => {
+    const fakeWindow = renamed();
+    await applyPagePatches(createFakeClient(fakeWindow), 'test', 'true');
+    Message.prototype.downloadMedia = stockDownloadMedia;
+
+    // the page still carries the id patch, so the probe reports `already applied`
+    await applyPagePatches(createFakeClient(fakeWindow), 'test', 'true');
+
+    expect(Message.prototype.downloadMedia).not.toBe(stockDownloadMedia);
+  });
+
+  it('force engages it even on a healthy build', async () => {
+    await applyPagePatches(createFakeClient(createFakeWindow()), 'test', 'force');
+
+    expect(Message.prototype.downloadMedia).not.toBe(stockDownloadMedia);
+  });
+
+  it('false never engages it', async () => {
+    await applyPagePatches(createFakeClient(renamed()), 'test', 'false');
+
+    expect(Message.prototype.downloadMedia).toBe(stockDownloadMedia);
+  });
+
+  it('never rejects, even when the page evaluate throws', async () => {
+    const client = {
+      pupPage: {
+        evaluate: async () => {
+          throw new Error('Execution context was destroyed');
+        },
+      },
+    };
+
+    await expect(applyPagePatches(client, 'test', 'true')).resolves.toBeUndefined();
+    expect(Message.prototype.downloadMedia).toBe(stockDownloadMedia);
   });
 });

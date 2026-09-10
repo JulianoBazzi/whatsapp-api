@@ -3,7 +3,7 @@
 // specific build pair, and a library that fixed it makes the patch dead weight at best.
 // Ported from avoylenko/wwebjs-api PR #150.
 const { Message, MessageMedia } = require('whatsapp-web.js');
-const { mediaResolveTimeoutMs, patchMediaDownloadEnabled } = require('./config');
+const { mediaResolveTimeoutMs, patchMediaDownloadMode } = require('./config');
 const { logger } = require('./logger');
 
 // WhatsApp Web 2.3000.x builds minify the serialized id field of Wid/MsgKey away from `_serialized`
@@ -163,6 +163,8 @@ const patchSerializedIds = async client => {
 // Ported from avoylenko/wwebjs-api PR #152, with the deadline fix noted inside the loop.
 // NOTE: Message.prototype is process-global. This runs from a per-session `ready`, but it patches
 // downloadMedia for every session at once. That is fine — the override reads this.client.pupPage.
+const NO_MEDIA_REASONS = new Set(['message is not in the page collection', 'message carries no mediaData']);
+
 const patchMediaDownload = (resolveTimeoutMs = mediaResolveTimeoutMs) => {
   Message.prototype.downloadMedia = async function () {
     if (!this.hasMedia) {
@@ -301,9 +303,11 @@ const patchMediaDownload = (resolveTimeoutMs = mediaResolveTimeoutMs) => {
     if (result.failed) {
       const { reason, ...details } = result.failed;
       logger.warn({ messageId: this.id._serialized, ...details }, `Media download failed: ${reason}`);
-      // 404 is how the library reports media the server no longer holds — keep that answering
-      // "no media" rather than an error.
-      if (details.status === 404) {
+      // The stock downloadMedia answers undefined when there is simply nothing to fetch — message
+      // gone from the page, no mediaData, or a 404 for media the server no longer holds — and the
+      // controllers turn that into 200 + `messageMedia: null`. Keep that contract; throw only when
+      // the media exists and fetching or reading it actually failed.
+      if (details.status === 404 || NO_MEDIA_REASONS.has(reason)) {
         return undefined;
       }
       throw new Error(`media download failed: ${reason}`);
@@ -317,13 +321,22 @@ const patchMediaDownload = (resolveTimeoutMs = mediaResolveTimeoutMs) => {
 // prototypes and a page reload wipes it. Never rejects, and everything has to stay inside the try:
 // the caller is an async EventEmitter listener, so a rejection here is an unhandled rejection — which
 // takes the process down on Node 24 — and it would also skip the `ready` webhook.
-const applyPagePatches = async (client, sessionId) => {
+// `mode` is taken from PATCH_MEDIA_DOWNLOAD; the parameter exists so tests can drive each value
+// without re-importing config.
+const applyPagePatches = async (client, sessionId, mode = patchMediaDownloadMode) => {
   try {
-    if (patchMediaDownloadEnabled) {
-      patchMediaDownload();
-    }
     const result = await patchSerializedIds(client);
     logger.info({ sessionId, ...result }, 'Serialized id patch');
+    // The media override only earns its keep on a build that renamed the ids: on a healthy build
+    // the stock downloadMedia works, and replacing it would trade a known-good path for an untested
+    // one. `applied` is what the first ready of a renamed build reports; `already applied` the next
+    // ones. Message.prototype is process-global, so once engaged it holds for every session — fine,
+    // every session in the process runs the same WhatsApp Web build.
+    const renamedBuild = result.applied || result.reason === 'already applied';
+    if (mode === 'force' || (mode === 'true' && renamedBuild)) {
+      patchMediaDownload();
+      logger.info({ sessionId, mode }, 'Media download patch engaged');
+    }
   } catch (error) {
     logger.error({ sessionId, err: error }, 'Failed to patch the page');
   }

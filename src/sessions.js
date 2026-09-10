@@ -339,20 +339,32 @@ const initializeEvents = (client, sessionId) => {
       if (!recoverSessions) {
         return;
       }
-      const restartSession = async sessionId => {
+      // A renderer crash emits both `error` and `close`, so the listeners go first: a second run
+      // would tear down the replacement client and leave its Chromium orphaned. The identity guard
+      // covers a /session/stop or /terminate that already replaced the slot meanwhile.
+      const restartSession = async () => {
+        client.pupPage.removeAllListeners('close');
+        client.pupPage.removeAllListeners('error');
+        if (sessions.get(sessionId) !== client) {
+          return;
+        }
         sessions.delete(sessionId);
-        await client.destroy().catch(_e => {});
+        await client.destroy().catch(() => {});
+        // setupSession removes the SingletonLock unconditionally; launching while the crashed
+        // Chromium is still alive would put two browsers on the same profile.
+        await waitForBrowserToClose(client);
         setupSession(sessionId);
       };
+      const restore = () => restartSession().catch(error => logger.error({ sessionId, err: error }, 'Failed to restore session'));
       client.pupPage.once('close', () => {
         // emitted when the page closes
         logger.warn({ sessionId }, 'Browser page closed. Restoring');
-        restartSession(sessionId);
+        restore();
       });
       client.pupPage.once('error', () => {
         // emitted when the page crashes
         logger.warn({ sessionId }, 'Error occurred on browser page. Restoring');
-        restartSession(sessionId);
+        restore();
       });
     })
     .catch(_e => {});
@@ -609,12 +621,15 @@ const reloadSession = async sessionId => {
         await Promise.all(pages.map(page => page.close()));
         await Promise.race([client.pupBrowser.close(), sleep(5000)]);
       }
-    } catch (_e) {
+    } catch {
       const childProcess = client.pupBrowser?.process?.();
       if (childProcess) {
         childProcess.kill(9);
       }
     }
+    // The race above is only a first attempt: the profile must be released before setupSession
+    // removes the SingletonLock, or the new browser fails to launch and the session is simply gone
+    await waitForBrowserToClose(client);
     sessions.delete(sessionId);
     setupSession(sessionId);
   } catch (error) {
@@ -645,15 +660,19 @@ const destroySession = async sessionId => {
 };
 
 const deleteSession = async (sessionId, validation) => {
+  const client = sessions.get(sessionId);
+  if (!client) {
+    // Not running, but the credentials may still be on disk (AUTO_START_SESSIONS=FALSE, /session/stop)
+    await deleteSessionFolder(sessionId);
+    sessionWebhooks.delete(sessionId);
+    envWebhooks.delete(sessionId);
+    return;
+  }
+  if (client.pupPage) {
+    client.pupPage.removeAllListeners('close');
+    client.pupPage.removeAllListeners('error');
+  }
   try {
-    const client = sessions.get(sessionId);
-    if (!client) {
-      return;
-    }
-    if (client.pupPage) {
-      client.pupPage.removeAllListeners('close');
-      client.pupPage.removeAllListeners('error');
-    }
     if (validation.success) {
       // Client Connected, request logout
       logger.info({ sessionId }, 'Logging out session');
@@ -663,15 +682,19 @@ const deleteSession = async (sessionId, validation) => {
       logger.info({ sessionId }, 'Destroying session');
       await client.destroy();
     }
-    // Wait for client.pupBrowser to be disconnected before deleting the folder
-    await waitForBrowserToClose(client);
-    await deleteSessionFolder(sessionId);
-    sessions.delete(sessionId);
-    sessionWebhooks.delete(sessionId);
   } catch (error) {
-    logger.error({ sessionId, err: error }, 'Failed to delete session');
-    throw error;
+    // The page is usually already gone here; the browser is forced down below either way
+    logger.error({ sessionId, err: error }, 'Failed to log out session, forcing the browser down');
   }
+  // Wait for client.pupBrowser to be disconnected before deleting the folder: dropping the Map entry
+  // earlier would let a /session/start launch a second browser on a profile that is being removed
+  await waitForBrowserToClose(client);
+  // Drop the entry even when the browser refused to die: a dead client left in the Map makes
+  // /session/start answer "already exists" and pins the status at session_not_ready
+  sessions.delete(sessionId);
+  sessionWebhooks.delete(sessionId);
+  envWebhooks.delete(sessionId);
+  await deleteSessionFolder(sessionId);
 };
 
 // Function to handle session flush
@@ -686,9 +709,12 @@ const flushSessions = async deleteOnlyInactive => {
       if (match) {
         const sessionId = match[1];
         const validation = await validateSession(sessionId);
-        if (!deleteOnlyInactive || !validation.success) {
-          await deleteSession(sessionId, validation);
+        // A session that is only on disk (stopped, or never auto-started) is not "inactive": its
+        // credentials are meant to survive, so only terminateAll reaches it
+        if (deleteOnlyInactive && (validation.success || validation.message === 'session_not_found')) {
+          continue;
         }
+        await deleteSession(sessionId, validation);
       }
     }
   } catch (error) {
@@ -721,6 +747,7 @@ const shutdownSessions = async () => {
 module.exports = {
   sessions,
   setupSession,
+  initializeEvents,
   ensureSessionFolder,
   restoreSessions,
   validateSession,

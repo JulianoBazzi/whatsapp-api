@@ -69,6 +69,9 @@ const removeParticipants = async (req, res) => {
     }
     */
     const { chatId, contactIds } = req.body;
+    if (!Array.isArray(contactIds) || contactIds.length === 0) {
+      return sendErrorResponse(res, 422, 'contactIds is required and must be a non-empty array');
+    }
     const client = sessions.get(req.params.sessionId);
     const chat = await client.getChatById(chatId);
     if (!chat.isGroup) {
@@ -77,6 +80,13 @@ const removeParticipants = async (req, res) => {
     await chat.removeParticipants(contactIds);
     res.json({ success: true, participants: chat.participants });
   } catch (error) {
+    // The library resolves every id against the group roster (by lid or by phone) and hands the
+    // survivors straight to WhatsApp Web. When nobody matches — a number that was only invited and
+    // never joined, or an id from another chat — the empty list surfaces as a protobuf complaint
+    // about zero children, which tells the caller nothing about what went wrong.
+    if (/at least 1 children/i.test(error?.message ?? '')) {
+      return sendErrorResponse(res, 422, 'None of the given contactIds is a participant of this group');
+    }
     sendErrorResponse(res, 500, error);
   }
 };

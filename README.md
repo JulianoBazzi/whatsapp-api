@@ -63,7 +63,7 @@ pnpm swagger   # regenerate swagger.json after changing routes
 | `GET /session/start/:id` | Starts a session |
 | `POST /session/start/:id` | Starts a session, optionally with `{ "webhookUrl": "..." }` |
 | `GET /session/qr/:id` | Current QR code (stops being served once the session authenticates) |
-| `POST /session/requestPairingCode/:id` | Authenticates by phone number instead of a QR code, with `{ "phoneNumber": "5551999998888" }` |
+| `POST /session/requestPairingCode/:id` | Authenticates by phone number instead of a QR code, with `{ "phoneNumber": "5551999998888" }`. **Broken on current WhatsApp Web builds** (whatsapp-web.js 1.34.7 looks for `AuthStore.PairingCodeLinkUtils`, which no longer exists) — use the QR code |
 | `GET /session/stop/:id` | Stops the session **keeping** its credentials, so it resumes without a new QR code |
 | `GET /session/terminate/:id` | Logs out and **deletes** the credentials |
 | `GET /session/getWebhook/:id` | Current webhook URL and its source |
@@ -115,39 +115,68 @@ docker rmi whatsapp-api:e2e                     # the image is kept between runs
 ## Generate new build
 
 
+Images are published for **linux/amd64 and linux/arm64** as a single multi-arch manifest, so
+`docker pull` picks the right architecture on Apple Silicon, on a Raspberry Pi and on an x86 server
+alike.
+
 1. Clone the repository
 ```bash
 git clone https://github.com/JulianoBazzi/whatsapp-api.git
 cd whatsapp-api
+export VERSION=1.2.0
 ```
 
-2. Bump `version` in `package.json` and regenerate the API docs. Image tags follow this version (not the `whatsapp-web.js` one), so every release gets an immutable tag to roll back to.
+2. Bump `version` in `package.json`, mirror it in the `image:` line of `docker-compose.yml`, and
+regenerate the API docs. Image tags follow this version (not the `whatsapp-web.js` one), so every
+release gets an immutable tag to roll back to.
 ```bash
 pnpm install --frozen-lockfile
 pnpm swagger
-git commit -am "Release $VERSION" && git tag v$VERSION && git push && git push --tags
+pnpm lint && pnpm test
+git commit -am "Release $VERSION" && git tag v$VERSION
 ```
 
-3. Build new version
+3. Push the code and **only this tag**. This repository is a fork and still carries the upstream tags
+(`v1.23.1-*`, `v1.26.0`) locally; a bare `git push --tags` would publish all of them.
 ```bash
-docker build --platform=linux/amd64 -t julibazzi/whatsapp-api:$VERSION .
+git push origin master
+git push origin v$VERSION
 ```
 
-4. Tag latest version
+4. Create the multi-arch builder. **Once per machine.** The default `docker` driver cannot produce a
+manifest list unless the daemon uses the containerd image store, so a `--platform` list fails on a
+stock `overlay2` daemon; the `docker-container` driver always can. Note the deliberate absence of
+`--use`: leaving the default builder alone keeps plain `docker build` loading images into the local
+store, which is what `pnpm test:e2e` relies on.
 ```bash
-docker tag julibazzi/whatsapp-api:$VERSION julibazzi/whatsapp-api:latest
+docker buildx create --name whatsapp-api-multiarch --driver docker-container --bootstrap
 ```
 
-5. Push version
+5. Build both architectures and push them under both tags in one shot. `--push` is required: a
+multi-platform image cannot be loaded into the local image store with `--load`.
 ```bash
-docker push julibazzi/whatsapp-api:$VERSION
-docker push julibazzi/whatsapp-api:latest
+docker login
+docker buildx build --builder whatsapp-api-multiarch --platform linux/amd64,linux/arm64 \
+  -t julibazzi/whatsapp-api:$VERSION \
+  -t julibazzi/whatsapp-api:latest \
+  --push .
 ```
 
-> The `Dockerfile` is plain OCI (no BuildKit-specific syntax), so `podman build/tag/push` accepts the
-> exact same commands. Official builds are still made with Docker: on Apple Silicon the cross-arch
-> `--platform=linux/amd64` build works out of the box with `buildx`, while Podman requires the
-> `podman machine` VM to have binfmt/qemu emulation configured.
+6. Verify the published manifest lists both architectures
+```bash
+docker buildx imagetools inspect julibazzi/whatsapp-api:$VERSION
+docker buildx imagetools inspect julibazzi/whatsapp-api:latest
+```
+
+> On an Apple Silicon host the arm64 half builds natively and the amd64 half runs through QEMU, so
+> the first build takes noticeably longer; layers are cached for later runs. To smoke-test the
+> cross-architecture half locally before publishing, build just that one and `--load` it:
+> `docker buildx build --builder whatsapp-api-multiarch --platform linux/amd64 -t whatsapp-api:amd64 --load .`
+
+> The `Dockerfile` itself is plain OCI (no BuildKit-specific syntax), so `podman build/tag/push`
+> still accepts it for a **single-architecture** image. The multi-arch manifest above is specific to
+> `docker buildx`; Podman's equivalent is `podman manifest` plus a `podman machine` VM with
+> binfmt/qemu emulation configured.
 
 ## Quick Start with Docker
 

@@ -15,7 +15,7 @@ const {
   headless,
   releaseBrowserLock,
 } = require('./config');
-const { triggerWebhook, waitForNestedObject, isEventEnabled, sendMessageSeenStatus, sleep } = require('./utils');
+const { triggerWebhook, waitForNestedObject, isEventEnabled, sendMessageSeenStatus, sleep, mediaDownloadLimiter } = require('./utils');
 const { applyPagePatches } = require('./patches');
 const { logger } = require('./logger');
 
@@ -451,8 +451,9 @@ const initializeEvents = (client, sessionId) => {
         if (typeof attachmentSize === 'number' && attachmentSize < maxAttachmentSize) {
           // custom service event
           if (isEventEnabled('media')) {
-            message
-              .downloadMedia()
+            // Queued: a burst of attachments must not become a burst of page-side media requests
+            mediaDownloadLimiter
+              .run(() => message.downloadMedia())
               .then(messageMedia => {
                 emit('media', { messageMedia, message });
               })

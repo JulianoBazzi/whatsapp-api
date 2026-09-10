@@ -12,6 +12,8 @@ const maxAttachmentSize = parseInt(process.env.MAX_ATTACHMENT_SIZE, 10) || 10000
 const ownMessageCaptureTimeoutMs = parseInt(process.env.OWN_MESSAGE_CAPTURE_TIMEOUT_MS, 10) || 8000;
 // How long the page is given to decrypt an attachment before downloadMedia gives up.
 const mediaResolveTimeoutMs = parseInt(process.env.MEDIA_RESOLVE_TIMEOUT_MS, 10) || 10000;
+// How many automatic media downloads (the `media` webhook) may run at once per process.
+const mediaDownloadConcurrency = parseInt(process.env.MEDIA_DOWNLOAD_CONCURRENCY, 10) || 3;
 // Controls the downloadMedia override in src/patches.js. Unlike the serialized-id patch, which is a
 // no-op on a healthy build, this one replaces the library's own implementation for every session in
 // the process: `true` (default) only engages it on a build that renamed the ids, `force` engages it
@@ -69,6 +71,7 @@ module.exports = {
   maxAttachmentSize,
   ownMessageCaptureTimeoutMs,
   mediaResolveTimeoutMs,
+  mediaDownloadConcurrency,
   patchMediaDownloadMode,
   setMessagesAsSeen,
   disabledCallbacks,

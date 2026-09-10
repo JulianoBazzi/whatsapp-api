@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { isValidPhone, onlyNumbers } = require('@julianobazzi/utils');
-const { globalApiKey, disabledCallbacks, webhookTimeoutMs, webhookRetries, webhookRetryDelayMs, ownMessageCaptureTimeoutMs } = require('./config');
+const { globalApiKey, disabledCallbacks, webhookTimeoutMs, webhookRetries, webhookRetryDelayMs, ownMessageCaptureTimeoutMs, mediaDownloadConcurrency } = require('./config');
 const { logger } = require('./logger');
 
 // Pause execution for the given number of milliseconds
@@ -159,6 +159,43 @@ const captureOwnMessage = (client, chatId, content, contentType, expectQuoted = 
   return { promise, cancel: () => settle(undefined) };
 };
 
+// Runs at most `max` tasks at once; the rest wait in arrival order. Used to keep a burst of incoming
+// attachments from turning into a burst of page-side media requests (each download may ask the page
+// several times before the blob shows up).
+const createLimiter = max => {
+  let active = 0;
+  const queue = [];
+  const next = () => {
+    if (active >= max || queue.length === 0) {
+      return;
+    }
+    active++;
+    const { task, resolve, reject } = queue.shift();
+    task()
+      .then(resolve, reject)
+      .finally(() => {
+        active--;
+        next();
+      });
+  };
+  return {
+    run: task =>
+      new Promise((resolve, reject) => {
+        queue.push({ task, resolve, reject });
+        next();
+      }),
+    get active() {
+      return active;
+    },
+    get pending() {
+      return queue.length;
+    },
+  };
+};
+
+// One queue per process for the automatic media downloads triggered by incoming messages
+const mediaDownloadLimiter = createLimiter(mediaDownloadConcurrency);
+
 module.exports = {
   triggerWebhook,
   sendErrorResponse,
@@ -171,4 +208,6 @@ module.exports = {
   toContactId,
   matchesOwnMessage,
   captureOwnMessage,
+  createLimiter,
+  mediaDownloadLimiter,
 };

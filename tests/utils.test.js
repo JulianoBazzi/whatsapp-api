@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 process.env.API_KEY = 'test_api_key';
 process.env.BASE_WEBHOOK_URL = 'http://localhost:3987/localCallbackExample';
 
-const { phoneToChatId, isEventEnabled, sendErrorResponse, waitForNestedObject, triggerWebhook, toContactId } = await import('../src/utils');
+const { phoneToChatId, isEventEnabled, sendErrorResponse, waitForNestedObject, triggerWebhook, toContactId, createLimiter } = await import('../src/utils');
 
 const projectRoot = process.cwd(); // vitest runs from the project root
 
@@ -153,5 +153,42 @@ describe('triggerWebhook', () => {
     expect(() => triggerWebhook('http://localhost:1/webhook', 'session1', 'message')).not.toThrow();
     // let the rejection be handled by the internal catch
     await new Promise(resolve => setTimeout(resolve, 50));
+  });
+});
+
+describe('createLimiter', () => {
+  it('never runs more than max tasks at once and drains the queue in order', async () => {
+    const limiter = createLimiter(2);
+    let running = 0;
+    let peak = 0;
+    const finished = [];
+    const task = name => async () => {
+      running++;
+      peak = Math.max(peak, running);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      running--;
+      finished.push(name);
+      return name;
+    };
+
+    const results = await Promise.all(['a', 'b', 'c', 'd'].map(name => limiter.run(task(name))));
+
+    expect(peak).toBe(2);
+    expect(results).toEqual(['a', 'b', 'c', 'd']);
+    expect(finished).toEqual(['a', 'b', 'c', 'd']);
+    expect(limiter.active).toBe(0);
+    expect(limiter.pending).toBe(0);
+  });
+
+  it('keeps going after a task rejects', async () => {
+    const limiter = createLimiter(1);
+
+    await expect(
+      limiter.run(async () => {
+        throw new Error('boom');
+      }),
+    ).rejects.toThrow('boom');
+    await expect(limiter.run(async () => 'next')).resolves.toBe('next');
+    expect(limiter.active).toBe(0);
   });
 });

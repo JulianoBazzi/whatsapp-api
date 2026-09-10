@@ -9,6 +9,7 @@ pnpm start          # sobe o servidor (exige BASE_WEBHOOK_URL válida no ambient
 pnpm test           # Vitest (integração real com puppeteer/chromium — ~30s)
 pnpm test:watch     # Vitest em watch
 pnpm test:coverage  # coverage v8 (text + html/lcov em coverage/)
+pnpm test:e2e       # Docker e2e: build + container real (OrbStack), ~3-5 min, fora do pnpm test e do CI
 pnpm lint           # biome check
 pnpm lint:fix       # biome check --write
 pnpm format         # biome format --write
@@ -34,6 +35,7 @@ pnpm swagger        # regenera swagger.json (swagger-autogen) — rodar após mu
 - **Biome** para lint e formatação (não ESLint/Prettier) — config em `biome.json`; `swagger.json` é gerado e fica fora do lint.
 - **@julianobazzi/utils** para validação/formatação (telefone BR, URLs, bytes, mascaramento de segredos).
 - Testes em `tests/`: `api.test.js` (integração, abre chromium de verdade, usa `./sessions_test` e porta 3987), `utils.test.js` (unitários), `ratelimit.test.js` e `webhook.test.js` (arquivos separados por precisarem de env própria; o de webhook usa um receptor HTTP local na porta 3988). Env vars precisam ser definidas **antes** do `await import('../src/app')` — imports estáticos são içados. `vi.mock` não intercepta `require` CJS do código de `src/`; testar sem mocks (servidor HTTP local, subprocess `node -e`).
+- E2E em `tests/e2e/*.e2e.js`, só via `vitest.e2e.config.mjs` (`pnpm test:e2e`) — o sufixo `.e2e.js` é o que os mantém fora do `pnpm test`. Orquestram o Docker com `node:child_process` e falam HTTP com `fetch` (nunca `supertest`: o servidor está no container). A imagem de teste é `whatsapp-api:e2e`, nunca uma tag `julibazzi/*`. Chromium é contado pelo host via `docker top` (raiz = binário `chromium` sem `--type=`; os `chrome_crashpad_handler` não contam). O `.dockerignore` precisa continuar excluindo `tests`, `vitest*.config.mjs` e `.env*` — o e2e afirma isso.
 - `setupSession` é **síncrona** de propósito (responde assim que `pupPage` existe, sem esperar o `initialize`) e `validateSession` retorna `session_not_ready` de imediato quando não há `pupPage` — os dois contratos são cobertos por teste, não trocar por `async`/espera.
 
 ## Avisos

@@ -96,6 +96,22 @@ Logs are structured JSON (pino) on stdout, with `LOG_LEVEL` controlling verbosit
 pnpm start | npx pino-pretty
 ```
 
+## Docker end-to-end tests
+
+`pnpm test:e2e` builds the image from the working tree as `whatsapp-api:e2e`, runs one-shot containers to check
+the image contents and the boot contract, and drives a long-lived container through a real session in the
+container's Chromium (up to the QR stage), restart, stop, terminate, the shipped `HEALTHCHECK` and a clean
+`docker stop`. It needs a local Docker daemon (OrbStack, Docker Desktop, Podman with the Docker socket) and takes
+3-5 minutes; it is not part of `pnpm test` and does not run in CI.
+
+```bash
+pnpm test:e2e                                   # native build (arm64 on Apple Silicon)
+E2E_PLATFORM=linux/amd64 pnpm test:e2e          # build and run what actually ships (slow: Rosetta/QEMU)
+E2E_SKIP_BUILD=1 pnpm test:e2e                  # reuse the existing whatsapp-api:e2e image
+E2E_LOGS=1 pnpm test:e2e                        # print the container log tail after the run
+docker rmi whatsapp-api:e2e                     # the image is kept between runs for the layer cache
+```
+
 ## Generate new build
 
 

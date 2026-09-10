@@ -27,8 +27,10 @@ RUN corepack enable
 # Copy the manifest and lockfile to the working directory
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install the dependencies
-RUN pnpm install --prod --frozen-lockfile
+# Install the dependencies, then drop the pnpm store and the corepack caches: node_modules is
+# already linked, and the leftovers are ~120 MB of dead weight in the image
+RUN pnpm install --prod --frozen-lockfile \
+    && rm -rf /root/.local/share/pnpm /root/.cache /root/.npm
 
 # Copy the rest of the source code to the working directory
 COPY . .

@@ -11,7 +11,7 @@ coverage
 
 # Ignore test files
 tests
-vitest.config.mjs
+vitest*.config.mjs
 sessions_test*
 
 # Ignore session files

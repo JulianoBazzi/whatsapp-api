@@ -105,26 +105,26 @@ git clone https://github.com/JulianoBazzi/whatsapp-api.git
 cd whatsapp-api
 ```
 
-2. Update whatsapp-web.js version in package.json
-
-3. Install libs
+2. Bump `version` in `package.json` and regenerate the API docs. Image tags follow this version (not the `whatsapp-web.js` one), so every release gets an immutable tag to roll back to.
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
+pnpm swagger
+git commit -am "Release $VERSION" && git tag v$VERSION && git push && git push --tags
 ```
 
 3. Build new version
 ```bash
-docker build --platform=linux/amd64 -t julibazzi/whatsapp-api:$WHATSAPP_WEB_JS_VERSION .
+docker build --platform=linux/amd64 -t julibazzi/whatsapp-api:$VERSION .
 ```
 
-3. Tag latest version
+4. Tag latest version
 ```bash
-docker tag julibazzi/whatsapp-api:$WHATSAPP_WEB_JS_VERSION julibazzi/whatsapp-api:latest
+docker tag julibazzi/whatsapp-api:$VERSION julibazzi/whatsapp-api:latest
 ```
 
-4. Push version
+5. Push version
 ```bash
-docker push julibazzi/whatsapp-api:$WHATSAPP_WEB_JS_VERSION
+docker push julibazzi/whatsapp-api:$VERSION
 docker push julibazzi/whatsapp-api:latest
 ```
 

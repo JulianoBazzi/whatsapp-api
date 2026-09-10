@@ -4,17 +4,18 @@ FROM node:24-alpine
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Install Chromium
+# Use the distro Chromium. PUPPETEER_SKIP_DOWNLOAD is the name puppeteer >= 19 reads (the old
+# PUPPETEER_SKIP_CHROMIUM_DOWNLOAD is ignored and the install would fetch a Chrome that never runs).
 ENV CHROME_BIN="/usr/bin/chromium-browser" \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true" \
+    PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium-browser" \
+    PUPPETEER_SKIP_DOWNLOAD="true" \
     NODE_ENV="production"
 
-# Install system dependencies (git is REQUIRED for github dependencies)
+# Install system dependencies
 RUN set -x \
     && apk update \
     && apk upgrade \
     && apk add --no-cache \
-       git \
        udev \
        ttf-freefont \
        chromium \
@@ -34,6 +35,10 @@ COPY . .
 
 # Expose the port the API will run on
 EXPOSE 3000
+
+# /ping is public by design; wget ships with Alpine's BusyBox
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget -qO- http://127.0.0.1:3000/ping || exit 1
 
 # Start the API
 CMD ["node", "server.js"]

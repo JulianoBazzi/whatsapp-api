@@ -3,3 +3,11 @@ allowBuilds:
   esbuild: true
   puppeteer: true
 minimumReleaseAge: 0
+
+# Transitive packages with published fixes that no direct-dependency bump pulls in yet
+# (pnpm audit --prod). extract-zip has no fix and only runs in the browser download the
+# image skips. Exact versions, as everywhere else in this project.
+overrides:
+  qs: 6.16.0
+  ip-address: 10.3.1
+  js-yaml: 4.3.2

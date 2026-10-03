@@ -2,7 +2,7 @@ services:
   app:
     container_name: whatsapp_web_api
     # build: .
-    image: julibazzi/whatsapp-api:1.2.0 # Pull the image from Docker Hub (tags follow the package.json version)
+    image: julibazzi/whatsapp-api:1.2.1 # Pull the image from Docker Hub (tags follow the package.json version)
     restart: always
     ports:
       - "3000:3000"

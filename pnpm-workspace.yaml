@@ -5,9 +5,11 @@ allowBuilds:
 minimumReleaseAge: 0
 
 # Transitive packages with published fixes that no direct-dependency bump pulls in yet
-# (pnpm audit --prod). extract-zip has no fix and only runs in the browser download the
-# image skips. Exact versions, as everywhere else in this project.
+# (pnpm audit --prod). extract-zip has no fix, and the basic-ftp and zod fixes are majors
+# that puppeteer's ranges reject; all three sit in puppeteer's browser download (which the
+# image skips) or its WebDriver BiDi transport (the app drives Chromium over CDP).
+# Exact versions, as everywhere else in this project.
 overrides:
-  qs: 6.16.0
-  ip-address: 10.3.1
+  qs: 6.17.0
+  ip-address: 10.7.5
   js-yaml: 4.3.2

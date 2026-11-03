@@ -24,8 +24,9 @@ RUN set -x \
 # Enable pnpm via corepack (version pinned by the packageManager field)
 RUN corepack enable
 
-# Copy the manifest and lockfile to the working directory
+# Copy the manifest, the lockfile and the dependency patches (pnpm applies them during install)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 
 # Install the dependencies, then drop the pnpm store and the corepack caches: node_modules is
 # already linked, and the leftovers are ~120 MB of dead weight in the image

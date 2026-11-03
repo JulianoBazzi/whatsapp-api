@@ -506,3 +506,16 @@ describe('applyPagePatches', () => {
     expect(Message.prototype.downloadMedia).toBe(stockDownloadMedia);
   });
 });
+
+// patches/whatsapp-web.js@1.34.7.patch (upstream 064a3d5, #201923): processMediaData() hands back a
+// MediaData model whose private `__x_id` is spread into the outgoing message and overwrites the Msg id,
+// so every media send dies with "Data passed to getter must include an id property". The function
+// source is what whatsapp-web.js serializes into the page, so asserting on it proves the installed copy
+// is the patched one — a reinstall or a bump that drops the patch fails here instead of in production.
+describe('whatsapp-web.js media id patch', () => {
+  it('strips the MediaData __x_id before the message is sent', () => {
+    const { LoadUtils } = require('whatsapp-web.js/src/util/Injected/Utils');
+
+    expect(LoadUtils.toString()).toContain('delete message.__x_id');
+  });
+});

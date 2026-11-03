@@ -13,3 +13,7 @@ overrides:
   qs: 6.17.0
   ip-address: 10.7.5
   js-yaml: 4.3.2
+# Upstream fixes merged on whatsapp-web.js main but not released to npm yet. Revalidate on every
+# bump and drop each one once a release carries it (see CLAUDE.md).
+patchedDependencies:
+  whatsapp-web.js@1.34.7: patches/whatsapp-web.js@1.34.7.patch

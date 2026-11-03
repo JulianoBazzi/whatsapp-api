@@ -27,6 +27,11 @@ describe('image contents', () => {
     expect(result.stdout).toBe(pkg.version);
   });
 
+  it('ships the patched whatsapp-web.js', () => {
+    // patches/ must reach the install layer, or media sends break again inside the container
+    expect(shInImage('grep -c "delete message.__x_id" /usr/src/app/node_modules/whatsapp-web.js/src/util/Injected/Utils.js').stdout).toBe('1');
+  });
+
   it('has a working chromium at $CHROME_BIN', () => {
     // $CHROME_BIN expands from the image ENV; --version also proves the binary loads on this arch
     const result = shInImage('test -x "$CHROME_BIN" && "$CHROME_BIN" --version');

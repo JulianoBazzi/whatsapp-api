@@ -1,3 +1,4 @@
+const { pipeline } = require('node:stream/promises');
 const { MessageMedia, Location, Poll } = require('whatsapp-web.js');
 const { sessions } = require('../sessions');
 const { sendErrorResponse, toContactId, captureOwnMessage } = require('../utils');
@@ -652,7 +653,7 @@ const unstar = async (req, res) => {
  */
 const downloadMediaAsData = async (req, res) => {
   // #swagger.summary = 'Download message media as binary'
-  // #swagger.description = 'Downloads media from a message as raw binary. Preferred over downloadMedia for large attachments, since base64 inside JSON inflates the payload by about a third.'
+  // #swagger.description = 'Downloads media from a message as raw binary, streamed in chunks. Preferred over downloadMedia for large attachments: base64 inside JSON inflates the payload by about a third, and this never holds the whole file in memory.'
   try {
     const { messageId, chatId } = req.body;
     const client = sessions.get(req.params.sessionId);
@@ -663,14 +664,13 @@ const downloadMediaAsData = async (req, res) => {
     if (!message.hasMedia) {
       throw new Error('Message media not Found');
     }
-    // downloadMedia() answers undefined for media the server no longer holds, so destructuring the
-    // result straight through turned an expired attachment into a TypeError instead of a 500 body.
-    const messageMedia = await message.downloadMedia();
-    if (!messageMedia) {
+    // downloadMediaStream() answers undefined for media the server no longer holds, so destructuring
+    // the result straight through would turn an expired attachment into a TypeError.
+    const media = await message.downloadMediaStream();
+    if (!media) {
       throw new Error('Message media not Found');
     }
-    const { data, mimetype, filename } = messageMedia;
-    const media = Buffer.from(data, 'base64');
+    const { stream, mimetype, filename } = media;
     /* #swagger.responses[200] = {
         description: "Raw media binary.",
         content: {
@@ -678,15 +678,21 @@ const downloadMediaAsData = async (req, res) => {
         }
       }
     */
-    // Content-Length comes from the decoded buffer, not from the media's `filesize`: the latter is
-    // the size WhatsApp reports for the original file and does not always match what we decoded.
+    // No Content-Length: the body is read from the page chunk by chunk, and the media's `filesize`
+    // is the size WhatsApp reports for the original file, which does not always match the decrypted
+    // bytes — so the response goes out chunked.
     res.writeHead(200, {
       'Content-Type': mimetype || 'application/octet-stream',
-      'Content-Length': media.length,
       ...(filename && { 'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"` }),
     });
-    return res.end(media);
+    await pipeline(stream, res);
   } catch (error) {
+    // Once the headers are out the status can no longer change: pipeline() already destroyed the
+    // response, so the client sees a truncated body rather than a 200 that looks complete.
+    if (res.headersSent) {
+      logger.error({ err: error }, 'downloadMediaAsData failed mid-stream');
+      return;
+    }
     sendErrorResponse(res, 500, error);
   }
 };

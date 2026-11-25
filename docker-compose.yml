@@ -32,9 +32,7 @@ services:
       # - CHROME_BIN=/usr/bin/chromium-browser # OPTIONAL, THE IMAGE SETS IT ALREADY
       # - HEADLESS=TRUE # OPTIONAL, RUN CHROME IN HEADLESS MODE
       # - OWN_MESSAGE_CAPTURE_TIMEOUT_MS=8000 # OPTIONAL, HOW LONG sendMessage WAITS ON message_create WHEN THE CLIENT RETURNS NOTHING
-      # - MEDIA_RESOLVE_TIMEOUT_MS=10000 # OPTIONAL, HOW LONG downloadMedia WAITS FOR THE PAGE TO DECRYPT THE ATTACHMENT
       # - MEDIA_DOWNLOAD_CONCURRENCY=3 # OPTIONAL, HOW MANY AUTOMATIC MEDIA DOWNLOADS RUN AT ONCE
-      # - PATCH_MEDIA_DOWNLOAD=TRUE # OPTIONAL, OVERRIDE THE whatsapp-web.js downloadMedia: TRUE ONLY ON BUILDS THAT RENAMED _serialized, FORCE ON EVERY BUILD, FALSE NEVER
     volumes:
       # Mount the local ./sessions/ folder to the container's /usr/src/app/sessions folder.
       # ':Z' relabels the bind mount for SELinux (required for rootless Podman on Fedora/RHEL).

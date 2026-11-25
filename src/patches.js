@@ -2,8 +2,6 @@
 // Revalidate this whole file on every whatsapp-web.js bump: each patch here works around a bug in a
 // specific build pair, and a library that fixed it makes the patch dead weight at best.
 // Ported from avoylenko/wwebjs-api PR #150.
-const { Message, MessageMedia } = require('whatsapp-web.js');
-const { mediaResolveTimeoutMs, patchMediaDownloadMode } = require('./config');
 const { logger } = require('./logger');
 
 // WhatsApp Web 2.3000.x builds minify the serialized id field of Wid/MsgKey away from `_serialized`
@@ -14,6 +12,9 @@ const { logger } = require('./logger');
 // Wid and MsgKey are renamed independently and the alias is minifier output, so each class is probed
 // on its own and the alias is discovered by value rather than assumed to be named `$1`.
 // On a healthy build this is a no-op: both probes report `exposes _serialized` and nothing is touched.
+// whatsapp-web.js 1.34.8 (upstream 58ddf15) added `_serialized || $1` fallbacks of its own, but only at
+// the call sites it knew about and only for the name `$1`; the prototype getter below covers every
+// `._serialized` read on the page, whatever the alias, so it stays.
 // NOTE: the callback is serialized and evaluated in the browser — it must not reference module scope.
 const patchSerializedIds = async client => {
   return await client.pupPage.evaluate(() => {
@@ -153,190 +154,17 @@ const patchSerializedIds = async client => {
   });
 };
 
-// WhatsApp Web 2.3000.x indexes the Msg collection under a key whatsapp-web.js no longer agrees on,
-// so `Msg.get(serializedId)` misses for every message that is not already in memory. The library
-// then falls back to `Msg.getMessagesById()`, whose IndexedDB lookup rejects the id with
-// `DataError: Failed to execute 'get' on 'IDBObjectStore'`. That class is minified, so puppeteer
-// recovers nothing but its name and the whole thing reaches the API as the opaque `t: t`.
-// Resolve the message ourselves — never reaching the IndexedDB fallback — and let the page own the
-// crypto, so every failure names its own cause instead of a minified class name.
-// Ported from avoylenko/wwebjs-api PR #152, with the deadline fix noted inside the loop.
-// NOTE: Message.prototype is process-global. This runs from a per-session `ready`, but it patches
-// downloadMedia for every session at once. That is fine — the override reads this.client.pupPage.
-const NO_MEDIA_REASONS = new Set(['message is not in the page collection', 'message carries no mediaData']);
-
-const patchMediaDownload = (resolveTimeoutMs = mediaResolveTimeoutMs) => {
-  Message.prototype.downloadMedia = async function () {
-    if (!this.hasMedia) {
-      return undefined;
-    }
-
-    const result = await this.client.pupPage.evaluate(
-      async (id, resolveTimeoutMs) => {
-        const attempt = read => {
-          try {
-            return read();
-          } catch {
-            return null;
-          }
-        };
-        const { Msg } = window.require('WAWebCollections');
-
-        // The serialized form changed shape between builds (a trailing `_out`, a participant for
-        // group messages), so try what the page handed us and the classic three-part key before
-        // giving up on the index.
-        let msg = null;
-        let resolvedBy = null;
-        for (const [via, key] of [
-          ['serialized', id._serialized],
-          ['threePart', `${id.fromMe}_${id.remote}_${id.id}`],
-        ]) {
-          if (!key) {
-            continue;
-          }
-          msg = attempt(() => Msg.get(key));
-          if (msg) {
-            resolvedBy = via;
-            break;
-          }
-        }
-        // The chat keeps its own collection, and that is the one the library already reads to hand
-        // this message to the caller — so it holds the message even when the global index does not.
-        // Match on the raw id, which no build has renamed. Linear scan, bounded by the messages
-        // loaded for one chat.
-        if (!msg) {
-          const chat = await (async () => {
-            try {
-              return await window.WWebJS.getChat(id.remote, { getAsModel: false });
-            } catch {
-              return null;
-            }
-          })();
-          const msgs = (chat?.msgs && attempt(() => chat.msgs.getModelsArray())) || [];
-          msg = msgs.find(m => m?.id?.id === id.id) || null;
-          if (msg) {
-            resolvedBy = 'chatScan';
-          }
-        }
-        if (!msg) {
-          return { failed: { reason: 'message is not in the page collection' } };
-        }
-        if (!msg.mediaData) {
-          return { failed: { reason: 'message carries no mediaData', resolvedBy } };
-        }
-
-        // The page drops `mediaData` off the message while it is working on it, so reading the stage
-        // straight through crashes the download. Treat it as a stage like any other and keep waiting.
-        const stageOf = () => msg.mediaData?.mediaStage || 'GONE';
-        const describe = error => ({ name: error?.name, message: error?.message, status: error?.status ?? null });
-
-        // Never re-decrypt the media ourselves. `downloadManager.downloadAndMaybeDecrypt` has to be
-        // fed `directPath`/`encFilehash`/`mediaKey`, and once the page has run a media retry those
-        // live on `msg.mediaObject`, not on the message — so the stale key off `msg` decrypts to
-        // garbage and WhatsApp's own sniffer answers `InvalidMediaFileType`, or a `hmac mismatch`
-        // when it gets that far. `msg.downloadMedia()` already decrypts and parks the blob in
-        // WhatsApp's own cache, so take it from there. The cache also stores upload FormData under
-        // the same key, so only take an entry we can actually read as a blob.
-        const readBlob = () => {
-          const cached = attempt(() => window.require('WAWebMediaInMemoryBlobCache').InMemoryMediaBlobCache.get(msg.mediaObject?.filehash));
-          if (cached && typeof cached.arrayBuffer === 'function') {
-            return cached;
-          }
-          const mediaBlob = msg.mediaObject?.mediaBlob;
-          return (mediaBlob && attempt(() => mediaBlob.forceToBlob())) || null;
-        };
-
-        // Asking once is not enough: when several media arrive in one batch the request goes nowhere
-        // and the stage never moves, so passively polling can only time out. Ask again on every
-        // round instead. The stage is never used to skip the call: cache eviction leaves `RESOLVED`
-        // behind with no blob to read.
-        let resolveAttempts = 0;
-        let lastResolveError = null;
-        let blob = readBlob();
-        const deadline = Date.now() + resolveTimeoutMs;
-        const failure = reason => ({ failed: { reason, mediaStage: stageOf(), resolvedBy, resolveAttempts, ...(lastResolveError ? describe(lastResolveError) : {}) } });
-
-        while (!blob) {
-          if (Date.now() > deadline) {
-            return failure('media did not resolve in time');
-          }
-          // `REUPLOADING` means the media expired and the sender is uploading it again — the page is
-          // already on it and a second ask would only pile on, so wait that stage out instead.
-          if (stageOf() !== 'REUPLOADING') {
-            resolveAttempts++;
-            try {
-              // The deadline is only checked between awaits, and a dropped media request never
-              // settles — without this race the timeout would not bound anything and the evaluate
-              // would hang forever, holding the request (and, on the webhook path, a listener).
-              await Promise.race([msg.downloadMedia({ downloadEvenIfExpensive: true, rmrReason: 1, isUserInitiated: true }), new Promise(resolve => setTimeout(resolve, 2000))]);
-            } catch (error) {
-              lastResolveError = error;
-            }
-          }
-          if (stageOf().includes('ERROR')) {
-            return failure('the page could not fetch the media');
-          }
-          blob = readBlob();
-          if (blob) {
-            break;
-          }
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        try {
-          return {
-            media: {
-              data: await window.WWebJS.arrayBufferToBase64Async(await blob.arrayBuffer()),
-              mimetype: msg.mimetype,
-              filename: msg.filename,
-              filesize: msg.size,
-            },
-          };
-        } catch (error) {
-          return { failed: { reason: 'reading the decrypted media failed', mediaStage: stageOf(), resolvedBy, resolveAttempts, ...describe(error) } };
-        }
-      },
-      this.id,
-      resolveTimeoutMs,
-    );
-
-    if (result.failed) {
-      const { reason, ...details } = result.failed;
-      logger.warn({ messageId: this.id._serialized, ...details }, `Media download failed: ${reason}`);
-      // The stock downloadMedia answers undefined when there is simply nothing to fetch — message
-      // gone from the page, no mediaData, or a 404 for media the server no longer holds — and the
-      // controllers turn that into 200 + `messageMedia: null`. Keep that contract; throw only when
-      // the media exists and fetching or reading it actually failed.
-      if (details.status === 404 || NO_MEDIA_REASONS.has(reason)) {
-        return undefined;
-      }
-      throw new Error(`media download failed: ${reason}`);
-    }
-    const { data, mimetype, filename, filesize } = result.media;
-    return new MessageMedia(mimetype, data, filename, filesize);
-  };
-};
-
-// Runs on every `ready`, because the page-side half of the patch lives on WhatsApp Web's own
-// prototypes and a page reload wipes it. Never rejects, and everything has to stay inside the try:
-// the caller is an async EventEmitter listener, so a rejection here is an unhandled rejection — which
-// takes the process down on Node 24 — and it would also skip the `ready` webhook.
-// `mode` is taken from PATCH_MEDIA_DOWNLOAD; the parameter exists so tests can drive each value
-// without re-importing config.
-const applyPagePatches = async (client, sessionId, mode = patchMediaDownloadMode) => {
+// Runs on every `ready`, because the patch lives on WhatsApp Web's own prototypes and a page reload
+// wipes it. Never rejects, and everything has to stay inside the try: the caller is an async
+// EventEmitter listener, so a rejection here is an unhandled rejection — which takes the process down
+// on Node 24 — and it would also skip the `ready` webhook.
+// The downloadMedia override that used to live here is gone: whatsapp-web.js 1.34.8 (upstream
+// 4df15e5) reads the blob WhatsApp already decrypted, and its stock download passed the single,
+// burst and evicted-message cases live on 2.3000.1056166380.
+const applyPagePatches = async (client, sessionId) => {
   try {
     const result = await patchSerializedIds(client);
     logger.info({ sessionId, ...result }, 'Serialized id patch');
-    // The media override only earns its keep on a build that renamed the ids: on a healthy build
-    // the stock downloadMedia works, and replacing it would trade a known-good path for an untested
-    // one. `applied` is what the first ready of a renamed build reports; `already applied` the next
-    // ones. Message.prototype is process-global, so once engaged it holds for every session — fine,
-    // every session in the process runs the same WhatsApp Web build.
-    const renamedBuild = result.applied || result.reason === 'already applied';
-    if (mode === 'force' || (mode === 'true' && renamedBuild)) {
-      patchMediaDownload();
-      logger.info({ sessionId, mode }, 'Media download patch engaged');
-    }
   } catch (error) {
     logger.error({ sessionId, err: error }, 'Failed to patch the page');
   }
@@ -344,6 +172,5 @@ const applyPagePatches = async (client, sessionId, mode = patchMediaDownloadMode
 
 module.exports = {
   patchSerializedIds,
-  patchMediaDownload,
   applyPagePatches,
 };

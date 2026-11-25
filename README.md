@@ -124,7 +124,7 @@ alike.
 ```bash
 git clone https://github.com/JulianoBazzi/whatsapp-api.git
 cd whatsapp-api
-export VERSION=1.2.3
+export VERSION=1.3.0
 ```
 
 2. Bump `version` in `package.json`, mirror it in the `image:` line of `docker-compose.yml`, and

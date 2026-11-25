@@ -2,7 +2,7 @@
   "openapi": "3.0.0",
   "info": {
     "title": "WhatsApp API",
-    "version": "1.2.3",
+    "version": "1.3.0",
     "description": "API Wrapper for WhatsAppWebJS"
   },
   "servers": [
@@ -686,6 +686,57 @@
             }
           }
         }
+      }
+    },
+    "/session/cancelPairingCode/{sessionId}": {
+      "post": {
+        "tags": [
+          "Session"
+        ],
+        "summary": "Cancel pairing code authentication",
+        "description": "Stops refreshing the pairing code requested with requestPairingCode and returns the session to QR code authentication.",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier for the session (alphanumeric and - allowed)",
+            "example": "f8377d8d-a589-4242-9ba6-9486a04ef80c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForbiddenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/session/restart/{sessionId}": {
@@ -8431,7 +8482,7 @@
           "Message"
         ],
         "summary": "Download message media as binary",
-        "description": "Downloads media from a message as raw binary. Preferred over downloadMedia for large attachments, since base64 inside JSON inflates the payload by about a third.",
+        "description": "Downloads media from a message as raw binary, streamed in chunks. Preferred over downloadMedia for large attachments: base64 inside JSON inflates the payload by about a third, and this never holds the whole file in memory.",
         "parameters": [
           {
             "name": "sessionId",

@@ -145,10 +145,11 @@ const localCallbackExample = async (req, res) => {
     if (dataType === 'qr') {
       qrcode.generate(data.qr, { small: true });
     }
-    fs.writeFile(`${sessionFolderPath}/message_log.txt`, `${JSON.stringify(req.body)}\r\n`, { flag: 'a+' }, _ => _);
+    // Written before answering: a caller that reads the log right after the 200 must find the line
+    await fs.promises.appendFile(`${sessionFolderPath}/message_log.txt`, `${JSON.stringify(req.body)}\r\n`);
     res.json({ success: true });
   } catch (error) {
-    fs.writeFile(`${sessionFolderPath}/message_log.txt`, `(ERROR) ${JSON.stringify(error)}\r\n`, { flag: 'a+' }, _ => _);
+    await fs.promises.appendFile(`${sessionFolderPath}/message_log.txt`, `(ERROR) ${JSON.stringify(error)}\r\n`).catch(_ => _);
     sendErrorResponse(res, 500, error);
   }
 };

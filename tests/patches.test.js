@@ -507,15 +507,28 @@ describe('applyPagePatches', () => {
   });
 });
 
-// patches/whatsapp-web.js@1.34.7.patch (upstream 064a3d5, #201923): processMediaData() hands back a
-// MediaData model whose private `__x_id` is spread into the outgoing message and overwrites the Msg id,
-// so every media send dies with "Data passed to getter must include an id property". The function
-// source is what whatsapp-web.js serializes into the page, so asserting on it proves the installed copy
-// is the patched one — a reinstall or a bump that drops the patch fails here instead of in production.
-describe('whatsapp-web.js media id patch', () => {
+// whatsapp-web.js 1.34.8 ships upstream 064a3d5 (#201923), which 1.2.3 had to apply as a pnpm patch:
+// processMediaData() hands back a MediaData model whose private `__x_id` is spread into the outgoing
+// message and overwrites the Msg id, so without it every media send dies with "Data passed to getter
+// must include an id property". The function source is what whatsapp-web.js serializes into the page, so
+// asserting on it catches a bump or a downgrade that loses the fix here instead of in production.
+describe('whatsapp-web.js media id fix', () => {
   it('strips the MediaData __x_id before the message is sent', () => {
     const { LoadUtils } = require('whatsapp-web.js/src/util/Injected/Utils');
 
     expect(LoadUtils.toString()).toContain('delete message.__x_id');
+  });
+});
+
+// patches/whatsapp-web.js@1.34.8.patch (upstream 38eb45b, #201990): since WhatsApp Web 2.3000.1055852612
+// a logged-out page lands on /login/, where `WAWebSocketModel` is null, so inject() waited on a socket
+// state that never came and no `qr` or `code` event ever fired — no new device could link. The patch
+// reads the state from `WAWebBackendEventBus`, which exists on both routes.
+describe('whatsapp-web.js login route patch', () => {
+  it('reads the socket state from the backend event bus', () => {
+    const source = require('node:fs').readFileSync(require.resolve('whatsapp-web.js/src/Client.js'), 'utf8');
+
+    expect(source).toContain("window.location.pathname.startsWith('/login')");
+    expect(source).toContain('BackendEventBus.socketState');
   });
 });

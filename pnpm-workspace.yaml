@@ -5,15 +5,17 @@ allowBuilds:
 minimumReleaseAge: 0
 
 # Transitive packages with published fixes that no direct-dependency bump pulls in yet
-# (pnpm audit --prod). extract-zip has no fix, and the basic-ftp and zod fixes are majors
-# that puppeteer's ranges reject; all three sit in puppeteer's browser download (which the
-# image skips) or its WebDriver BiDi transport (the app drives Chromium over CDP).
+# (pnpm audit --prod). The rest of the audit has no fix inside the ranges its parents accept:
+# extract-zip has no fix at all, and the basic-ftp and zod fixes are majors puppeteer rejects —
+# all three sit in puppeteer's browser download (which the image skips) or its WebDriver BiDi
+# transport (the app drives Chromium over CDP); the glob and minimatch fixes are majors archiver
+# rejects, and whatsapp-web.js only zips with archiver in RemoteAuth (this project uses LocalAuth).
 # Exact versions, as everywhere else in this project.
 overrides:
-  qs: 6.17.0
-  ip-address: 10.7.5
+  qs: 6.17.1
+  ip-address: 10.7.6
   js-yaml: 4.3.2
 # Upstream fixes merged on whatsapp-web.js main but not released to npm yet. Revalidate on every
 # bump and drop each one once a release carries it (see CLAUDE.md).
 patchedDependencies:
-  whatsapp-web.js@1.34.7: patches/whatsapp-web.js@1.34.7.patch
+  whatsapp-web.js@1.34.8: patches/whatsapp-web.js@1.34.8.patch

@@ -28,8 +28,8 @@ describe('image contents', () => {
   });
 
   it('ships the patched whatsapp-web.js', () => {
-    // patches/ must reach the install layer, or media sends break again inside the container
-    expect(shInImage('grep -c "delete message.__x_id" /usr/src/app/node_modules/whatsapp-web.js/src/util/Injected/Utils.js').stdout).toBe('1');
+    // patches/ must reach the install layer, or new sessions never get a QR inside the container
+    expect(shInImage('grep -c "BackendEventBus.socketState" /usr/src/app/node_modules/whatsapp-web.js/src/Client.js').stdout).not.toBe('0');
   });
 
   it('has a working chromium at $CHROME_BIN', () => {

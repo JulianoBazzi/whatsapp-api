@@ -360,6 +360,11 @@ const createGroup = async (req, res) => {
     }
     const client = sessions.get(req.params.sessionId);
     const response = await client.createGroup(groupTitle, participants, options);
+    // whatsapp-web.js swallows the page error and resolves with this string instead of rejecting,
+    // which used to reach the caller as a success
+    if (typeof response === 'string' && response.startsWith('CreateGroupError')) {
+      return sendErrorResponse(res, 500, response);
+    }
     res.json({ success: true, response });
   } catch (error) {
     sendErrorResponse(res, 500, error);

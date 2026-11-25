@@ -170,7 +170,32 @@ const applyPagePatches = async (client, sessionId) => {
   }
 };
 
+// whatsapp-web.js 1.34.8 `client.cancelPairingCode()` refreshes the QR through
+// `WAWebLaunchSocketUtils.refreshQR()`, which does not exist on the /login/ route a logged-out page
+// lands on since WhatsApp Web 2.3000.1055852612 — exactly where a pairing code is cancelled. It stops
+// the code refresh and then throws, leaving the session with neither a code nor a QR. Same steps here,
+// but the QR is refreshed through `WAWebBackendEventBus` when the old module is gone (the bus is what
+// patches/whatsapp-web.js@1.34.8.patch already reads the socket state from). Drop this once the
+// library's own cancelPairingCode handles /login/.
+// NOTE: the callback is serialized and evaluated in the browser — it must not reference module scope.
+const cancelPairingCode = async client => {
+  await client.pupPage.evaluate(async () => {
+    if (window.codeInterval) {
+      clearInterval(window.codeInterval);
+      window.codeInterval = undefined;
+    }
+    const launchSocket = window.require('WAWebLaunchSocketUtils');
+    if (typeof launchSocket?.refreshQR === 'function') {
+      launchSocket.refreshQR();
+    } else {
+      window.require('WAWebBackendEventBus').BackendEventBus.triggerRefreshQR();
+    }
+    await window.require('WAWebAltDeviceLinkingApi').initializeQRLinking();
+  });
+};
+
 module.exports = {
   patchSerializedIds,
   applyPagePatches,
+  cancelPairingCode,
 };

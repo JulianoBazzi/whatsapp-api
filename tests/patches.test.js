@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const require = createRequire(import.meta.url);
-const { patchSerializedIds, applyPagePatches } = require('../src/patches');
+const { patchSerializedIds, applyPagePatches, cancelPairingCode } = require('../src/patches');
 
 // Builds a stand-in for the WhatsApp Web page context. `widField` and `msgKeyField` name the property
 // each class exposes its serialized id under: `_serialized` on healthy builds, and a minified alias
@@ -231,6 +231,36 @@ describe('applyPagePatches', () => {
     };
 
     await expect(applyPagePatches(client, 'test')).resolves.toBeUndefined();
+  });
+});
+
+// The logged-out page either still has WAWebLaunchSocketUtils (the / route) or only the backend event
+// bus (the /login/ route of 2.3000.1055852612+); `launchSocket: false` builds the latter.
+const createFakePairingWindow = ({ launchSocket = true } = {}) => {
+  const calls = { refreshQR: 0, triggerRefreshQR: 0, initializeQRLinking: 0 };
+  const modules = {
+    WAWebLaunchSocketUtils: launchSocket ? { refreshQR: () => calls.refreshQR++ } : null,
+    WAWebBackendEventBus: { BackendEventBus: { triggerRefreshQR: () => calls.triggerRefreshQR++ } },
+    WAWebAltDeviceLinkingApi: { initializeQRLinking: async () => calls.initializeQRLinking++ },
+  };
+  return { calls, codeInterval: setInterval(() => {}, 60000), require: name => modules[name] };
+};
+
+describe('cancelPairingCode', () => {
+  it('refreshes the QR through the backend event bus on the /login/ route', async () => {
+    const fakeWindow = createFakePairingWindow({ launchSocket: false });
+    await cancelPairingCode(createFakeClient(fakeWindow));
+
+    expect(fakeWindow.calls).toEqual({ refreshQR: 0, triggerRefreshQR: 1, initializeQRLinking: 1 });
+    expect(fakeWindow.codeInterval).toBeUndefined();
+  });
+
+  it('keeps using WAWebLaunchSocketUtils where it still exists', async () => {
+    const fakeWindow = createFakePairingWindow();
+    await cancelPairingCode(createFakeClient(fakeWindow));
+
+    expect(fakeWindow.calls).toEqual({ refreshQR: 1, triggerRefreshQR: 0, initializeQRLinking: 1 });
+    expect(fakeWindow.codeInterval).toBeUndefined();
   });
 });
 

@@ -3,6 +3,7 @@ const { onlyNumbers, isValidUrl } = require('@julianobazzi/utils');
 const { setupSession, deleteSession, destroySession, reloadSession, validateSession, flushSessions, sessions, setSessionWebhook, getSessionWebhook } = require('../sessions');
 const { sendErrorResponse, waitForNestedObject } = require('../utils');
 const { logger } = require('../logger');
+const { cancelPairingCode: cancelPagePairingCode } = require('../patches');
 
 /**
  * Starts a session for the given session ID.
@@ -556,7 +557,8 @@ const cancelPairingCode = async (req, res) => {
     if (!client.pupPage) {
       return res.json({ success: false, message: 'session_not_ready' });
     }
-    await client.cancelPairingCode();
+    // not client.cancelPairingCode(): it throws on the /login/ route (see src/patches.js)
+    await cancelPagePairingCode(client);
     res.json({ success: true, message: 'Pairing code cancelled' });
   } catch (error) {
     logger.error({ sessionId, err: error }, 'cancelPairingCode failed');

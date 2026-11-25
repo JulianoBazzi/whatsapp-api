@@ -83,15 +83,6 @@ const sendMessageSeenStatus = async message => {
   }
 };
 
-// Expose a function to the page only once — re-exposing the same name throws in puppeteer
-const exposeFunctionIfAbsent = async (page, name, fn) => {
-  const exists = await page.evaluate(fnName => !!window[fnName], name);
-  if (exists) {
-    return;
-  }
-  await page.exposeFunction(name, fn);
-};
-
 // Convert a Brazilian phone number into a WhatsApp chat id (55DDDNUMBER@c.us)
 const phoneToChatId = phone => {
   const digits = onlyNumbers(String(phone ?? ''));
@@ -204,7 +195,6 @@ module.exports = {
   waitForNestedObject,
   isEventEnabled,
   sendMessageSeenStatus,
-  exposeFunctionIfAbsent,
   phoneToChatId,
   toContactId,
   matchesOwnMessage,

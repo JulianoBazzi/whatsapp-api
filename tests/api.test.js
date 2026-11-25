@@ -273,6 +273,17 @@ describe('API Session Management Tests', () => {
     expect(response.status).toBe(422);
     expect(response.body).toEqual({ success: false, error: 'phoneNumber is required' });
   });
+
+  it('should return session_not_found when cancelling a pairing code for an unknown session', async () => {
+    const response = await request(app).post('/session/cancelPairingCode/unknownsession').set('x-api-key', 'test_api_key');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ success: false, message: 'session_not_found' });
+  });
+
+  it('should refuse to cancel a pairing code without the API key', async () => {
+    const response = await request(app).post('/session/cancelPairingCode/unknownsession');
+    expect(response.status).toBe(403);
+  });
 });
 
 describe('API Action Tests', () => {

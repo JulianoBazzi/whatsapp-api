@@ -44,6 +44,7 @@ sessionRouter.get('/status/:sessionId', middleware.sessionNameValidation, sessio
 sessionRouter.get('/qr/:sessionId', middleware.sessionNameValidation, sessionController.sessionQrCode);
 sessionRouter.get('/qr/:sessionId/image', middleware.sessionNameValidation, sessionController.sessionQrCodeImage);
 sessionRouter.post('/requestPairingCode/:sessionId', middleware.sessionNameValidation, sessionController.requestPairingCode);
+sessionRouter.post('/cancelPairingCode/:sessionId', middleware.sessionNameValidation, sessionController.cancelPairingCode);
 sessionRouter.get('/restart/:sessionId', middleware.sessionNameValidation, sessionController.restartSession);
 sessionRouter.get('/stop/:sessionId', middleware.sessionNameValidation, sessionController.stopSession);
 sessionRouter.get('/terminate/:sessionId', middleware.sessionNameValidation, sessionController.terminateSession);

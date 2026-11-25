@@ -1,7 +1,7 @@
 const qr = require('qr-image');
 const { onlyNumbers, isValidUrl } = require('@julianobazzi/utils');
 const { setupSession, deleteSession, destroySession, reloadSession, validateSession, flushSessions, sessions, setSessionWebhook, getSessionWebhook } = require('../sessions');
-const { sendErrorResponse, waitForNestedObject, exposeFunctionIfAbsent } = require('../utils');
+const { sendErrorResponse, waitForNestedObject } = require('../utils');
 const { logger } = require('../logger');
 
 /**
@@ -514,12 +514,8 @@ const requestPairingCode = async (req, res) => {
     if (!client.pupPage) {
       return res.json({ success: false, message: 'session_not_ready' });
     }
-    // whatsapp-web.js re-exposes onCodeReceivedEvent on every call and throws if it already exists
-    // (see pedroslopez/whatsapp-web.js#3706); expose it ourselves so the 'code' event still fires.
-    await exposeFunctionIfAbsent(client.pupPage, 'onCodeReceivedEvent', async code => {
-      client.emit('code', code);
-      return code;
-    });
+    // whatsapp-web.js 1.34.8 exposes onCodeReceivedEvent only when absent and emits 'code' itself, so
+    // the webhook still fires on every refreshed code
     const result = await client.requestPairingCode(digits, showNotification);
     /* #swagger.responses[200] = {
       description: "Pairing code generated.",
@@ -533,6 +529,37 @@ const requestPairingCode = async (req, res) => {
     res.json({ success: true, result });
   } catch (error) {
     logger.error({ sessionId, err: error }, 'requestPairingCode failed');
+    sendErrorResponse(res, 500, error);
+  }
+};
+
+/**
+ * Cancels an active pairing code request and puts the session back on QR code authentication.
+ *
+ * @function
+ * @async
+ * @param {Object} req - The HTTP request object.
+ * @param {Object} res - The HTTP response object.
+ * @param {string} req.params.sessionId - The session ID.
+ * @returns {Promise<void>}
+ * @throws {Error} If there was an error cancelling the pairing code.
+ */
+const cancelPairingCode = async (req, res) => {
+  // #swagger.summary = 'Cancel pairing code authentication'
+  // #swagger.description = 'Stops refreshing the pairing code requested with requestPairingCode and returns the session to QR code authentication.'
+  const sessionId = req.params.sessionId;
+  try {
+    const client = sessions.get(sessionId);
+    if (!client) {
+      return res.json({ success: false, message: 'session_not_found' });
+    }
+    if (!client.pupPage) {
+      return res.json({ success: false, message: 'session_not_ready' });
+    }
+    await client.cancelPairingCode();
+    res.json({ success: true, message: 'Pairing code cancelled' });
+  } catch (error) {
+    logger.error({ sessionId, err: error }, 'cancelPairingCode failed');
     sendErrorResponse(res, 500, error);
   }
 };
@@ -632,6 +659,7 @@ module.exports = {
   getSessions,
   stopSession,
   requestPairingCode,
+  cancelPairingCode,
   setWebhook,
   getWebhook,
 };

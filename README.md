@@ -63,7 +63,8 @@ pnpm swagger   # regenerate swagger.json after changing routes
 | `GET /session/start/:id` | Starts a session |
 | `POST /session/start/:id` | Starts a session, optionally with `{ "webhookUrl": "..." }` |
 | `GET /session/qr/:id` | Current QR code (stops being served once the session authenticates) |
-| `POST /session/requestPairingCode/:id` | Authenticates by phone number instead of a QR code, with `{ "phoneNumber": "5551999998888" }`. **Broken on current WhatsApp Web builds** (whatsapp-web.js 1.34.7 looks for `AuthStore.PairingCodeLinkUtils`, which no longer exists) — use the QR code |
+| `POST /session/requestPairingCode/:id` | Authenticates by phone number instead of a QR code, with `{ "phoneNumber": "5551999998888" }`; the code also arrives on the `code` webhook and is refreshed every 3 minutes |
+| `POST /session/cancelPairingCode/:id` | Stops the pairing code and puts the session back on QR code authentication |
 | `GET /session/stop/:id` | Stops the session **keeping** its credentials, so it resumes without a new QR code |
 | `GET /session/terminate/:id` | Logs out and **deletes** the credentials |
 | `GET /session/getWebhook/:id` | Current webhook URL and its source |

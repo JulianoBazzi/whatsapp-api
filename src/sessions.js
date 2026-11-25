@@ -1,7 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const fs = require('node:fs');
 const path = require('node:path');
-const { formatBytes, isValidUrl } = require('@julianobazzi/utils');
+const { formatBytes, isValidUrl, sleep } = require('@julianobazzi/utils');
 const sessions = new Map();
 const {
   baseWebhookURL,
@@ -15,7 +15,7 @@ const {
   headless,
   releaseBrowserLock,
 } = require('./config');
-const { triggerWebhook, waitForNestedObject, isEventEnabled, sendMessageSeenStatus, sleep, mediaDownloadLimiter } = require('./utils');
+const { triggerWebhook, waitForNestedObject, isEventEnabled, sendMessageSeenStatus, mediaDownloadLimiter } = require('./utils');
 const { applyPagePatches } = require('./patches');
 const { logger } = require('./logger');
 

@@ -1,10 +1,7 @@
 const axios = require('axios');
-const { isValidPhone, onlyNumbers } = require('@julianobazzi/utils');
+const { isValidPhone, onlyNumbers, retry, RetryError } = require('@julianobazzi/utils');
 const { globalApiKey, disabledCallbacks, webhookTimeoutMs, webhookRetries, webhookRetryDelayMs, ownMessageCaptureTimeoutMs, mediaDownloadConcurrency } = require('./config');
 const { logger } = require('./logger');
-
-// Pause execution for the given number of milliseconds
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // A webhook attempt is worth repeating only when the receiver never answered (network/timeout) or failed on its side (5xx).
 // A 4xx means the payload was rejected: repeating it would just fail again.
@@ -15,22 +12,27 @@ const triggerWebhook = (webhookURL, sessionId, dataType, data) => {
   const payload = { dataType, data, sessionId };
 
   const deliver = async () => {
-    for (let attempt = 0; attempt <= webhookRetries; attempt++) {
-      try {
-        await axios.post(webhookURL, payload, { headers: { 'x-api-key': globalApiKey }, timeout: webhookTimeoutMs });
-        return;
-      } catch (error) {
-        const hasAttemptsLeft = attempt < webhookRetries;
-        if (!hasAttemptsLeft || !isRetryableWebhookError(error)) {
-          // Only the useful fields: an axios error carries the whole request/response/config graph,
-          // which would put several KB of noise in the log on every failed event.
-          const err = { message: error.message, code: error.code, status: error.response?.status };
-          logger.error({ sessionId, dataType, err, attempts: attempt + 1 }, `Failed to send webhook message to ${webhookURL}`);
-          return;
-        }
-        // Exponential backoff: 1s, 2s, 4s...
-        await sleep(webhookRetryDelayMs * 2 ** attempt);
-      }
+    let attempts = 0;
+    try {
+      await retry(
+        ({ attempt }) => {
+          attempts = attempt;
+          return axios.post(webhookURL, payload, { headers: { 'x-api-key': globalApiKey }, timeout: webhookTimeoutMs });
+        },
+        {
+          attempts: webhookRetries + 1,
+          // Exponential backoff: 1s, 2s, 4s... (`attempt` is 1-based)
+          delayMs: attempt => webhookRetryDelayMs * 2 ** (attempt - 1),
+          shouldRetry: isRetryableWebhookError,
+        },
+      );
+    } catch (failure) {
+      // retry() wraps the last error once every attempt failed, and rethrows a declined one (4xx) as is
+      const error = failure instanceof RetryError ? failure.cause : failure;
+      // Only the useful fields: an axios error carries the whole request/response/config graph,
+      // which would put several KB of noise in the log on every failed event.
+      const err = { message: error.message, code: error.code, status: error.response?.status };
+      logger.error({ sessionId, dataType, err, attempts }, `Failed to send webhook message to ${webhookURL}`);
     }
   };
 
@@ -203,7 +205,6 @@ module.exports = {
   isEventEnabled,
   sendMessageSeenStatus,
   exposeFunctionIfAbsent,
-  sleep,
   phoneToChatId,
   toContactId,
   matchesOwnMessage,
